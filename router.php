@@ -10,7 +10,7 @@ class Route {
 
     public static function submit() {
         $uri = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
-        $base_path = 'project'; // Adjust base path
+        $base_path = 'billing'; // Adjust base path
         //print $uri.'<br>'.$base_path.'<br>';
         if (strpos($uri, $base_path) === 0) {
             $uri = substr($uri, strlen($base_path));
