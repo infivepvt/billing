@@ -242,7 +242,7 @@ function formatNumber($number)
             <div class="payment-box">
                 <h3>PAYMENT SUMMARY</h3>
                 <p>Advance: Rs. <?php echo htmlspecialchars_decode(formatNumber(abs($advance_paid))); ?></p>
-                <p>Due: Rs. <?php echo htmlspecialchars_decode(formatNumber(abs($due))); ?></p>
+                <p>Due: Rs. <?php echo htmlspecialchars_decode(formatNumber($due)); ?></p>
                 <br>
                 <div style="border: 3px solid black;">
                 <p style="font-size: 15px; text-align: center; font-weight: bold;">Total: Rs.
@@ -326,7 +326,7 @@ function formatNumber($number)
             </div>
             <div class="totals-row">
                 <span class="totals-label">Balance Due:</span>
-                <span class="totals-value">Rs. <?php echo htmlspecialchars_decode(formatNumber(abs($due))); ?></span>
+                <span class="totals-value">Rs. <?php echo htmlspecialchars_decode(formatNumber($due)); ?></span>
             </div>
         </div>
         <div style="clear: both;"></div>
