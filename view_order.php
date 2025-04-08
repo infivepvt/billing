@@ -299,7 +299,7 @@ function formatNumber($number)
                                                 <div class="heading-16">Advance: Rs.
                                                     <?php echo formatNumber(abs($advance_paid)); ?>
                                                 </div>
-                                                <div class="heading-16">Due: Rs. <?php echo formatNumber(abs($due)); ?>
+                                                <div class="heading-16">Due: Rs. <?php echo formatNumber($due); ?>
                                                 </div>
                                             </div>
                                         </div>
@@ -307,7 +307,7 @@ function formatNumber($number)
                                     <div class="delivery-box">
                                         <div class="row">
                                             <div class="col-md-6 heading-16">CASH ON DELIVERY:</div>
-                                            <div class="col-md-6 heading-16">Rs. <?php echo formatNumber(abs($due)); ?>
+                                            <div class="col-md-6 heading-16">Rs. <?php echo formatNumber($due); ?>
                                             </div>
                                         </div>
                                     </div>
@@ -437,7 +437,7 @@ function formatNumber($number)
                                 <div class="col-md-2 text-right">
                                     <div class="heading-16">Rs. <?php echo formatNumber(abs($order_total_amount)); ?></div>
                                     <div class="heading-16">Rs. <?php echo formatNumber(abs($advance_paid)); ?></div>
-                                    <div class="heading-16">Rs. <?php echo formatNumber(abs($due)); ?></div>
+                                    <div class="heading-16">Rs. <?php echo formatNumber($due); ?></div>
                                 </div>
                             </div>
 
@@ -1116,7 +1116,7 @@ function formatNumber($number)
             <strong>Order Summary:</strong>
             <div>Subtotal: <span id="modalSubtotal">Rs. <?php echo $order['order_total_amount']; ?></span></div>
             <div>Advance: Rs. <?php echo $advance_paid; ?></div>
-            <div>Due: <span id="dueAmount">Rs. <?php echo abs($due); ?></span></div> <!-- Added abs() here -->
+            <div>Due: <span id="dueAmount">Rs. <?php echo $due; ?></span></div> <!-- Added abs() here -->
         </div>
     </div>
     <div class="col-md-6 text-right">
