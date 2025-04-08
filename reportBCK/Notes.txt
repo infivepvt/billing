@@ -1,0 +1,29 @@
+Header:
+   Customer Name
+   Customer Company
+   Customer Address
+   Customer Tel No.
+   Customer e-mail
+   
+   Invoice No.
+   Invoice Date
+   Invoice Title
+
+Footer:
+   Company Name
+   Company Address
+   Company Tel No.
+   Page No.
+   Page Total.
+   
+Body:
+   No.
+   Item Detail
+   Item Amount
+   Discount
+   Total Amount
+   Total in words
+   
+   Terms and Conditions
+   Mode of Payment
+   Signature
