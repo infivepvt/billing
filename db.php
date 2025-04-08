@@ -12,7 +12,7 @@ try {
     echo "Connection error: " . $exception->getMessage();
 }
 
-define('BASE_URL', 'http://localhost/project'); // Change this to your local project URL
+define('BASE_URL', 'https://infiveprint.com/billing/'); // Change this to your local project URL
 
 function generateUniqueRandomNumber($pdo) {
     do {
