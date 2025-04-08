@@ -1,9 +1,9 @@
 <?php
 
 $host = 'localhost';
-$name = 'u263749830_infive';
-$user = 'root';
-$password = '';
+$name = 'u263749830_bill_invoice';
+$user = 'u263749830_billing';
+$password = 'KE#iU@H0d^';
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$name", $user, $password);
