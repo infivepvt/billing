@@ -20,8 +20,10 @@ $order_details = $statement->fetchAll(PDO::FETCH_ASSOC);
 
 // Calculate totals
 $order_total_amount = $order['order_total_amount'];
+$discount_amount = $order['discount_amount'] ?? 0;
+$final_amount = $order_total_amount - $discount_amount;
 $advance_paid = $order['payment_amount'];
-$due = $order_total_amount - $advance_paid;
+$due = $final_amount - $advance_paid;
 
 function formatNumber($number)
 {
@@ -108,7 +110,6 @@ function formatNumber($number)
         .client-box {
             border: 1px solid black;
             flex: 1;
-
         }
 
         .payment-box {
@@ -172,7 +173,7 @@ function formatNumber($number)
 
         .totals {
             float: right;
-            width: 150px;
+            width: 180px;
             margin-top: 10px;
             font-size: 10px;
         }
@@ -189,7 +190,19 @@ function formatNumber($number)
 
         .totals-value {
             text-align: right;
-            width: 60px;
+            width: 70px;
+        }
+
+        .highlight-row {
+            font-weight: bold;
+            border-top: 1px solid #ddd;
+            padding-top: 3px;
+        }
+
+        .final-amount-row {
+            font-weight: bold;
+            font-size: 12px;
+            color:black;
         }
 
         .footer {
@@ -241,15 +254,17 @@ function formatNumber($number)
             
             <div class="payment-box">
                 <h3>PAYMENT SUMMARY</h3>
+                <p>Order Total: Rs. <?php echo htmlspecialchars_decode(formatNumber(abs($order_total_amount))); ?></p>
+                <p>Discount: - Rs. <?php echo htmlspecialchars_decode(formatNumber(abs($discount_amount))); ?></p>
+                <p>Final Amount: Rs. <?php echo htmlspecialchars_decode(formatNumber(abs($final_amount))); ?></p>
                 <p>Advance: Rs. <?php echo htmlspecialchars_decode(formatNumber(abs($advance_paid))); ?></p>
                 <p>Due: Rs. <?php echo htmlspecialchars_decode(formatNumber($due)); ?></p>
                 <br>
                 <div style="border: 3px solid black;">
-                <p style="font-size: 15px; text-align: center; font-weight: bold;">Total: Rs.
-                    <?php echo htmlspecialchars_decode(formatNumber(abs($order_total_amount))); ?>
+                <p style="font-size: 15px; text-align: center; font-weight: bold;">Total Due: Rs.
+                    <?php echo htmlspecialchars_decode(formatNumber(abs($due))); ?>
                 </p>
                 </div>
-                
             </div>
         </div>
 
@@ -315,41 +330,43 @@ function formatNumber($number)
 
         <div class="totals" style="margin-right: 40px;">
             <div class="totals-row">
-                <span class="totals-label">Subtotal:</span>
-                <span class="totals-value">Rs.
-                    <?php echo htmlspecialchars_decode(formatNumber(abs($order_total_amount))); ?></span>
+                <span class="totals-label">Total Order Amount:</span>
+                <span class="totals-value">Rs. <?php echo htmlspecialchars_decode(formatNumber(abs($order_total_amount))); ?></span>
             </div>
+            
             <div class="totals-row">
+                <span class="totals-label">Discount Amount:</span>
+                <span class="totals-value">- Rs. <?php echo htmlspecialchars_decode(formatNumber(abs($discount_amount))); ?></span>
+            </div>
+            
+            <div class="totals-row final-amount-row">
+                <span class="totals-label">Final Amount:</span>
+                <span class="totals-value">Rs. <?php echo htmlspecialchars_decode(formatNumber(abs($final_amount))); ?></span>
+            </div>
+            
+            <div class="totals-row highlight-row">
                 <span class="totals-label">Advance Paid:</span>
-                <span class="totals-value">Rs.
-                    <?php echo htmlspecialchars_decode(formatNumber(abs($advance_paid))); ?></span>
+                <span class="totals-value">Rs. <?php echo htmlspecialchars_decode(formatNumber(abs($advance_paid))); ?></span>
             </div>
-            <div class="totals-row">
+            
+            <div class="totals-row highlight-row">
                 <span class="totals-label">Balance Due:</span>
-                <span class="totals-value">Rs. <?php echo htmlspecialchars_decode(formatNumber($due)); ?></span>
+                <span class="totals-value">Rs. <?php echo htmlspecialchars_decode(formatNumber(abs($due))); ?></span>
             </div>
         </div>
+        
         <div style="clear: both;"></div>
 
-        <!-- <div class="thank-you">
-            <p style="color: black; font-weight: bold;">Thank you for your business!</p>
-        </div> -->
-
-        <!-- <div class="footer">
-            <p>INFIVE PRINT | 206A Wilgoda Est.Rd, Kurunegale</p>
-            <p>Terms: Payment due upon receipt. Late payments subject to interest charges.</p>
-        </div> -->
-    </div>
-
-    <div class="no-print" style="text-align: center; margin-top: 10px;">
-        <button onclick="window.print()"
-            style="padding: 5px 10px; background-color: #1BA664; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px;">
-            Print Invoice
-        </button>
-        <button onclick="window.close()"
-            style="padding: 5px 10px; background-color: #666; color: white; border: none; border-radius: 3px; cursor: pointer; margin-left: 5px; font-size: 10px;">
-            Close Window
-        </button>
+        <div class="no-print" style="text-align: center; margin-top: 10px;">
+            <button onclick="window.print()"
+                style="padding: 5px 10px; background-color: #1BA664; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px;">
+                Print Invoice
+            </button>
+            <button onclick="window.close()"
+                style="padding: 5px 10px; background-color: #666; color: white; border: none; border-radius: 3px; cursor: pointer; margin-left: 5px; font-size: 10px;">
+                Close Window
+            </button>
+        </div>
     </div>
 
     <script>
@@ -362,5 +379,4 @@ function formatNumber($number)
         };
     </script>
 </body>
-
 </html>

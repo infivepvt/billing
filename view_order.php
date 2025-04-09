@@ -218,6 +218,12 @@ function formatNumber($number)
         .product-select {
             width: 100%;
         }
+
+        .final-amount {
+            font-weight: bold;
+            color: #1BA664;
+            font-size: 1.1em;
+        }
     </style>
 </head>
 
@@ -239,13 +245,15 @@ function formatNumber($number)
                 <section class="section">
                     <div class="section-body">
                         <?php
-                        $statement = $pdo->prepare("SELECT o.company_name, o.payment_type, o.payment_amount, o.order_total_amount, o.delivery_address, o.phone, o.order_date, o.order_id, o.order_status, d.product_name, d.quantity, d.total FROM pixel_media_order o, pixel_media_order_details d WHERE o.order_id = d.order_id and o.order_id = ?");
+                        $statement = $pdo->prepare("SELECT o.company_name, o.payment_type, o.payment_amount, o.order_total_amount, o.discount_amount, o.delivery_address, o.phone, o.order_date, o.order_id, o.order_status, d.product_name, d.quantity, d.total FROM pixel_media_order o, pixel_media_order_details d WHERE o.order_id = d.order_id and o.order_id = ?");
                         $statement->execute(array($order_id));
                         $order = $statement->fetch(PDO::FETCH_ASSOC);
 
                         $advance_paid = $order['payment_amount'];
                         $order_total_amount = $order['order_total_amount'];
-                        $due = $order_total_amount - $advance_paid;
+                        $discount_amount = $order['discount_amount'] ?? 0; // Get discount amount or default to 0
+                        $final_amount = $order_total_amount - $discount_amount;
+                        $due = $final_amount - $advance_paid;
                         ?>
 
                         <div class="order-container">
@@ -286,21 +294,26 @@ function formatNumber($number)
                             </div>
 
                             <div class="row">
-                                <div class="col-md-6">
+                            <div class="col-md-6">
                                     <div class="payment-box">
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="heading-20">Payment Summary</div>
-                                                <div class="heading-22">Total: Rs.
-                                                    <?php echo formatNumber(abs($order_total_amount)); ?>
+                                                <div class="heading-16">Total: Rs.
+                                                    <?php echo formatNumber($order_total_amount); ?>
+                                                </div>
+                                                <div class="heading-16">Discount: Rs.
+                                                    <?php echo formatNumber($discount_amount); ?>
+                                                </div>
+                                                <div class="heading-22">Final Amount: Rs.
+                                                    <?php echo formatNumber($final_amount); ?>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="heading-16">Advance: Rs.
-                                                    <?php echo formatNumber(abs($advance_paid)); ?>
+                                                    <?php echo formatNumber($advance_paid); ?>
                                                 </div>
-                                                <div class="heading-16">Due: Rs. <?php echo formatNumber($due); ?>
-                                                </div>
+                                                <div class="heading-16">Due: Rs. <?php echo formatNumber($due); ?></div>
                                             </div>
                                         </div>
                                     </div>
@@ -431,11 +444,13 @@ function formatNumber($number)
                                 <div class="col-md-8"></div>
                                 <div class="col-md-2 text-right">
                                     <div class="heading-16">Total</div>
+                                    <div class="heading-16">Discount</div>
                                     <div class="heading-16">Advance</div>
                                     <div class="heading-16">Due</div>
                                 </div>
                                 <div class="col-md-2 text-right">
                                     <div class="heading-16">Rs. <?php echo formatNumber(abs($order_total_amount)); ?></div>
+                                    <div class="heading-16">Rs. <?php echo formatNumber($discount_amount); ?></div>
                                     <div class="heading-16">Rs. <?php echo formatNumber(abs($advance_paid)); ?></div>
                                     <div class="heading-16">Rs. <?php echo formatNumber($due); ?></div>
                                 </div>
@@ -1114,7 +1129,7 @@ function formatNumber($number)
     <div class="col-md-6 text-left">
         <div class="alert alert-info" style="margin-bottom: 0;">
             <strong>Order Summary:</strong>
-            <div>Subtotal: <span id="modalSubtotal">Rs. <?php echo $order['order_total_amount']; ?></span></div>
+            <div>Subtotal: <span id="modalSubtotal">Rs. <?php echo $order['order_total_amount']; ?></span></div>           
             <div>Advance: Rs. <?php echo $advance_paid; ?></div>
             <div>Due: <span id="dueAmount">Rs. <?php echo $due; ?></span></div> <!-- Added abs() here -->
         </div>

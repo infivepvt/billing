@@ -5,7 +5,11 @@ include('./db.php');
 $statement = $pdo->prepare("SELECT * FROM pixel_media_order WHERE order_id = ?");
 $statement->execute(array($order_id));
 $order = $statement->fetch(PDO::FETCH_ASSOC);
-$due = $order['order_total_amount'] - $order['payment_amount'];            
+
+// Calculate amounts
+$discount_amount = $order['discount_amount'] ?? 0; // Default to 0 if not set
+$final_amount = $order['order_total_amount'] - $discount_amount;
+$due = $final_amount - $order['payment_amount'];            
             
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -55,7 +59,6 @@ class PDF extends FPDF
             $x2 * $this->k, ($h - $y2) * $this->k, $x3 * $this->k, ($h - $y3) * $this->k));
     }
 
-
     function Footer()
     {
         $this->AddFont('Montserrat','','Montserrat Regular 400.php');
@@ -66,28 +69,18 @@ class PDF extends FPDF
         // Page number
         $this->Cell(0, 10, 'This is computer generated invoice no signature required.', 0, 0, 'L');
         $this->Image(BASE_URL.'/report/infive_footer.jpg', 0, 260, 210);
-        //$this->Cell(0, 10, 'This is computer generated invoice no signature required.' . $this->PageNo(), 0, 0, 'C');
     }
-
-
 }
 
 $line_height = 6;
 
 $pdf = new PDF();
 $pdf->AddPage();
-//$pdf->SetFont('Arial', 'B', 10);
-
 $pdf->AddFont('Montserrat','','Montserrat Regular 400.php');
-
-
 $pdf->AddFont('MontserratB','','Montserrat Bold 700.php');
-
-
 $pdf->SetFont('MontserratB','',10);
 
 $pdf->Image(BASE_URL.'/report/infive_logo.png', 10, 10, 30);
-
 $pdf->Ln(30);
 
 $pdf->Cell(40, $line_height, 'Invoice to',0,1,'L');
@@ -101,8 +94,8 @@ $pdf->Cell(40, $line_height, $order['phone'],0,1,'L');
 $pdf->Ln(5);
 $y = $pdf->GetY();
 
-$pdf->SetFillColor(238, 238, 238); // Set background color
-$pdf->SetDrawColor(238, 238, 238); // Set border color (black)
+$pdf->SetFillColor(238, 238, 238);
+$pdf->SetDrawColor(238, 238, 238);
 $pdf->RoundedRect(10, $pdf->getY(), 190, $line_height*3, 2, 'DF'); 
 
 $pdf->Cell(5, $line_height-3, '', 0, 0, 'L', false);
@@ -134,7 +127,6 @@ $pdf->SetX(85);
 $pdf->SetFont('Montserrat','',10);
 $pdf->MultiCell(65, $line_height-1, $order['delivery_address'],  0, 'L', 0);
 
-
 $pdf->SetFont('MontserratB','',8);
 $pdf->SetXY(150,$y+3);
 $pdf->Cell(20, $line_height-2, 'TOTAL: RS.'.$order['order_total_amount'], 0, 1, 'L', false);
@@ -145,14 +137,12 @@ $pdf->Cell(20, $line_height-2, 'TOTAL DUE: RS.'.$due, 0, 1, 'L', false);
 
 $pdf->Ln(10);
 
-$pdf->SetFillColor(14, 167, 85); // Set background color
-$pdf->SetDrawColor(14, 167, 85); // Set border color (black)
+$pdf->SetFillColor(14, 167, 85);
+$pdf->SetDrawColor(14, 167, 85);
 $pdf->RoundedRect(10, $pdf->getY()+10, 190, $line_height*1.5, 2, 'DF'); 
-
 
 $pdf->SetFont('MontserratB','',10);
 $pdf->Ln(10);
-//$pdf->SetFillColor(63, 158, 114);
 $pdf->Cell(60, $line_height*1.5, 'PRODUCT', 0, 0, 'L');
 $pdf->Cell(70, $line_height*1.5, 'SPEC', 0, 0, 'C');
 $pdf->Cell(15, $line_height*1.5, 'QTY', 0, 0, 'L');
@@ -191,37 +181,49 @@ foreach($order_details as $item)
         }
     }
 
-$pdf->SetFont('Montserrat','',10);
-$pdf->setXY(140,$y);
-$pdf->Cell(15, $line_height*$row, $item['quantity'], 0, 0, 'L', false);
-$pdf->Cell(25, $line_height*$row, 'RS.'.$item['price'], 0, 0, 'L', false);
-$pdf->Cell(25, $line_height*$row, 'RS.'.$item['total'], 0, 1, 'L', false);
+    $pdf->SetFont('Montserrat','',10);
+    $pdf->setXY(140,$y);
+    $pdf->Cell(15, $line_height*$row, $item['quantity'], 0, 0, 'L', false);
+    $pdf->Cell(25, $line_height*$row, 'RS.'.$item['price'], 0, 0, 'L', false);
+    $pdf->Cell(25, $line_height*$row, 'RS.'.$item['total'], 0, 1, 'L', false);
 
-$pdf->Cell(190, 3, '', 'B', 1, 'L', false);
-
-
-
+    $pdf->Cell(190, 3, '', 'B', 1, 'L', false);
 }
 
+// Updated Totals Section
 $pdf->Ln(2);
 $pdf->SetFont('Montserrat','',10);
 
+// Total Order Amount
 $pdf->Cell(130, $line_height, '', 0, 0, 'R', false);
-$pdf->Cell(30, $line_height, 'TOTAL', 0, 0, 'L', false);
+$pdf->Cell(30, $line_height, 'TOTAL ', 0, 0, 'L', false);
 $pdf->SetFont('MontserratB','',10);
-$pdf->Cell(30, $line_height, 'RS.'.$order['order_total_amount'], 0, 1, 'L', false);
+$pdf->Cell(30, $line_height, 'RS.'.number_format($order['order_total_amount'], 2), 0, 1, 'L', false);
 
+// Discount Amount
+$pdf->SetFont('Montserrat','',10);
+$pdf->Cell(130, $line_height, '', 0, 0, 'R', false);
+$pdf->Cell(30, $line_height, 'DISCOUNT', 0, 0, 'L', false);
+$pdf->SetFont('MontserratB','',10);
+$pdf->Cell(30, $line_height, '- RS.'.number_format($discount_amount, 2), 0, 1, 'L', false);
 
+// Final Amount After Discount
+$pdf->SetFont('Montserrat','',10);
+$pdf->Cell(130, $line_height, '', 0, 0, 'R', false);
+$pdf->Cell(30, $line_height, 'FINAL AMOUNT', 0, 0, 'L', false);
+$pdf->SetFont('MontserratB','',10);
+$pdf->Cell(30, $line_height, 'RS.'.number_format($final_amount, 2), 0, 1, 'L', false);
+
+// Advance Payment
 $pdf->SetFont('Montserrat','',10);
 $pdf->Cell(130, $line_height, '', 0, 0, 'R', false);
 $pdf->Cell(30, $line_height, 'ADVANCE', 0, 0, 'L', false);
 $pdf->SetFont('MontserratB','',10);
 $pdf->Cell(30, $line_height, 'RS.'.$order['payment_amount'], 0, 1, 'L', false);
 
-
-$pdf->SetFillColor(14, 167, 85); // Set background color
-$pdf->SetDrawColor(14, 167, 85); // Set border color (black)
-
+// Total Due (with green background)
+$pdf->SetFillColor(14, 167, 85);
+$pdf->SetDrawColor(14, 167, 85);
 $pdf->RoundedRect(140, $pdf->getY()+7, 60, $line_height*2, 2, 'DF'); 
 
 $pdf->Ln(10);
@@ -229,10 +231,7 @@ $pdf->SetFont('Montserrat','',11);
 $pdf->Cell(130, $line_height, '', 0, 0, 'R', false);
 $pdf->Cell(30, $line_height, 'TOTAL DUE', 0, 0, 'L', false);
 $pdf->SetFont('MontserratB','',11);
-$pdf->Cell(30, $line_height, 'RS. '.number_format($due,2), 0, 1, 'L', false);
-
+$pdf->Cell(30, $line_height, 'RS. '.number_format($due, 2), 0, 1, 'L', false);
 
 $pdf->Output('invoice.pdf','D');
-
-
 ?>
