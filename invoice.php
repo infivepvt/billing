@@ -261,8 +261,8 @@ function formatNumber($number)
                 <p>Due: Rs. <?php echo htmlspecialchars_decode(formatNumber($due)); ?></p>
                 <br>
                 <div style="border: 3px solid black;">
-                <p style="font-size: 15px; text-align: center; font-weight: bold;">Total Due: Rs.
-                    <?php echo htmlspecialchars_decode(formatNumber(abs($due))); ?>
+                <p style="font-size: 15px; text-align: center; font-weight: bold;">Total : Rs.
+                    <?php echo htmlspecialchars_decode(formatNumber(abs($final_amount))); ?>
                 </p>
                 </div>
             </div>
