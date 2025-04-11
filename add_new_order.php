@@ -49,6 +49,7 @@ if ($order_id > 0) {
     <!-- Template CSS -->
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/style.css">
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/components.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
     <style>
         body {
@@ -123,6 +124,40 @@ if ($order_id > 0) {
             /* Custom green color */
             color: #fff;
             /* Ensure text color remains white */
+        }
+
+        .star {
+            color: red;
+            font-weight: bold;
+        }
+
+        .specs-heading {
+            background-color: #f8f9fa;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            border-left: 4px solid #1BA664;
+        }
+
+        /* Add to your existing style section */
+        .remove-row {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .remove-row:hover {
+            transform: scale(1.1);
+            background-color: #c82333;
+        }
+
+        .product-row {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+            align-items: center;
+        }
+
+        .product-row:last-child {
+            border-bottom: none;
         }
     </style>
 
@@ -519,13 +554,14 @@ if ($order_id > 0) {
                                             </div>
 
                                             <div class="row" style="font-size: 16px;font-weight: bold;">
+
                                                 <div class="col-md-3">
-                                                    <select class="form-control" name="products[]"
-                                                        onchange="get_specification(this.value)" style="height:40px;">
+                                                    <select class="form-control" name="products[]" id="productCombo"
+                                                        onchange="get_specification(this.value)" style="width: 100%;">
                                                         <option value="">Select</option>
                                                         <?php
                                                         foreach ($product as $val) {
-                                                            print "<option value='$val'>$val</option>";
+                                                            echo "<option value='$val'>$val</option>";
                                                         }
 
                                                         $statement = $pdo->prepare("SELECT * FROM pixel_media_product");
@@ -534,10 +570,11 @@ if ($order_id > 0) {
 
                                                         foreach ($order_product as $row) {
                                                             $val = $row['product_name'];
-                                                            print "<option value='$val'>$val</option>";
+                                                            echo "<option value='$val'>$val</option>";
                                                         }
                                                         ?>
                                                     </select>
+                                                    
                                                 </div>
                                                 <div class="col-md-2"><input type="text" name="quantity[]"
                                                         class="form-control quantity" style="width:100px;height: 40px;">
@@ -645,10 +682,7 @@ if ($order_id > 0) {
                                     <div class="row" id="business_card_print_full" style="display:none;">
                                         <div class="col-md-6"
                                             style="border:1px solid black;border-radius: 5px;background-color: white;">
-                                            <div class="row">
-                                                <div class="col-md-6" style="font-weight: bold;">Select Specs<span
-                                                        class="star">**</span></div>
-                                            </div>
+
 
                                             <div class="row">
                                                 <div class="col-md-12" style="color:green">Type</div>
@@ -769,10 +803,7 @@ if ($order_id > 0) {
                                     <div class="row" id="business_card_print_foil" style="display:none;">
                                         <div class="col-md-6"
                                             style="border:1px solid black;border-radius: 5px;background-color: white;">
-                                            <div class="row">
-                                                <div class="col-md-6" style="font-weight: bold;">Select Specs<span
-                                                        class="star">**</span></div>
-                                            </div>
+
 
                                             <div class="row">
                                                 <div class="col-md-12" style="color:green">Type</div>
@@ -893,10 +924,7 @@ if ($order_id > 0) {
                                     <div class="row" id="business_card_print_matte" style="display:none;">
                                         <div class="col-md-6"
                                             style="border:1px solid black;border-radius: 5px;background-color: white;">
-                                            <div class="row">
-                                                <div class="col-md-6" style="font-weight: bold;">Select Specs<span
-                                                        class="star">**</span></div>
-                                            </div>
+
 
                                             <div class="row">
                                                 <div class="col-md-12" style="color:green">Type</div>
@@ -1017,10 +1045,7 @@ if ($order_id > 0) {
                                     <div class="row" id="sticker_print" style="display:none;">
                                         <div class="col-md-6"
                                             style="border:1px solid black;border-radius: 5px;background-color: white;">
-                                            <div class="row">
-                                                <div class="col-md-6" style="font-weight: bold;">Select Specs<span
-                                                        class="star">**</span></div>
-                                            </div>
+
 
                                             <div class="row">
                                                 <div class="col-md-12" style="color:red">Print Type</div>
@@ -1078,10 +1103,7 @@ if ($order_id > 0) {
                                     <div class="row" id="flyer_print" style="display:none;">
                                         <div class="col-md-6"
                                             style="border:1px solid black;border-radius: 5px;background-color: white;">
-                                            <div class="row">
-                                                <div class="col-md-6" style="font-weight: bold;">Select Specs<span
-                                                        class="star">**</span></div>
-                                            </div>
+
 
                                             <div class="row">
                                                 <div class="col-md-12" style="color:red">Thikness</div>
@@ -1145,10 +1167,7 @@ if ($order_id > 0) {
                                     <div class="row" id="tag_print" style="display:none;">
                                         <div class="col-md-6"
                                             style="border:1px solid black;border-radius: 5px;background-color: white;">
-                                            <div class="row">
-                                                <div class="col-md-6" style="font-weight: bold;">Select Specs<span
-                                                        class="star">**</span></div>
-                                            </div>
+
 
                                             <div class="row">
                                                 <div class="col-md-12" style="color:red">Size</div>
@@ -1325,6 +1344,8 @@ the process here: [Insert Link]. - Infive Print
     <script src="<?php echo BASE_URL; ?>/assets/modules/nicescroll/jquery.nicescroll.min.js"></script>
     <script src="<?php echo BASE_URL; ?>/assets/modules/moment.min.js"></script>
     <script src="<?php echo BASE_URL; ?>/assets/js/stisla.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <!-- JS Libraies -->
 
@@ -1346,6 +1367,26 @@ the process here: [Insert Link]. - Infive Print
                     window.location.href = 'dashboard.php';
                 }, 30000); // 3 seconds delay before redirecting
             <?php endif; ?>
+
+            $('#productCombo').select2({
+                placeholder: "Search product...",
+                allowClear: true,
+                width: 'resolve'
+            });
+
+            // Event handler for the first dropdown
+            $('#productCombo').on('select2:select', function (e) {
+                var selectedVal = $(this).val();
+                get_specification(selectedVal);
+            });
+
+
+
+            // Auto-call your function on select
+            $('#productCombo').on('select2:select', function (e) {
+                var selectedVal = $(this).val();
+                get_specification(selectedVal);
+            });
 
             function calculateTotal() {
                 $('#div_add_more_product .row').each(function () {
@@ -1409,69 +1450,164 @@ the process here: [Insert Link]. - Infive Print
     <script type="text/javascript">
 
         var product_cnt = 1;
-        function get_specification(val) {
+        function get_specification(val, rowId) {
+            var targetDiv = rowId ? $('#div_product_spec_' + rowId) : $('#div_product_spec_' + product_cnt);
 
-            if (val == 'Business card Design') {
-                $('#div_product_spec_' + product_cnt).html($('#business_card_design').html());
+            // Clear previous specifications
+            targetDiv.html('');
+
+            // Define which products have specifications
+            const productsWithSpecs = [
+                'Business card Design',
+                'Business card Print full color',
+                'Business card Print foil',
+                'Business card Print matte',
+                'Sticker print',
+                'Flyer Print',
+                'Tag Print',
+                'Any Other Design',
+                'Any Other Print'
+            ];
+
+            // Check if the selected product has specifications
+            if (productsWithSpecs.includes(val)) {
+                // Show the "Select Specs" heading
+                targetDiv.append('<div class="row"><div class="col-md-6 specs-heading">Select Specs<span class="star">**</span></div></div>');
+
+                // Add the appropriate specifications based on the product
+                if (val == 'Business card Design') {
+                    targetDiv.append($('#business_card_design').html());
+                }
+                else if (val == 'Business card Print full color') {
+                    targetDiv.append($('#business_card_print_full').html());
+                }
+                else if (val == 'Business card Print foil') {
+                    targetDiv.append($('#business_card_print_foil').html());
+                }
+                else if (val == 'Business card Print matte') {
+                    targetDiv.append($('#business_card_print_matte').html());
+                }
+                else if (val == 'Sticker print') {
+                    targetDiv.append($('#sticker_print').html());
+                }
+                else if (val == 'Flyer Print') {
+                    targetDiv.append($('#flyer_print').html());
+                }
+                else if (val == 'Tag Print') {
+                    targetDiv.append($('#tag_print').html());
+                }
+                else if (val == 'Any Other Design') {
+                    targetDiv.append($('#any_other_design').html());
+                }
+                else if (val == 'Any Other Print') {
+                    targetDiv.append($('#any_other_print').html());
+                }
+            } else {
+                // For products without specs (like Delivery), clear the div
+                targetDiv.html('');
             }
-
-            if (val == 'Business card Print full color') {
-                $('#div_product_spec_' + product_cnt).html($('#business_card_print_full').html())
-            }
-
-            if (val == 'Business card Print foil') {
-                $('#div_product_spec_' + product_cnt).html($('#business_card_print_foil').html())
-            }
-
-            if (val == 'Business card Print matte') {
-                $('#div_product_spec_' + product_cnt).html($('#business_card_print_matte').html())
-            }
-
-            if (val == 'Sticker print') {
-                $('#div_product_spec_' + product_cnt).html($('#sticker_print').html())
-            }
-
-            if (val == 'Flyer Print') {
-                $('#div_product_spec_' + product_cnt).html($('#flyer_print').html())
-            }
-
-            if (val == 'Tag Print') {
-                $('#div_product_spec_' + product_cnt).html($('#tag_print').html())
-            }
-
-            if (val == 'Any Other Design') {
-                $('#div_product_spec_' + product_cnt).html($('#any_other_design').html())
-            }
-
-            if (val == 'Any Other Print') {
-                $('#div_product_spec_' + product_cnt).html($('#any_other_print').html())
-            }
-
-            if (val == 'Delivery') {
-                $('#div_product_spec_' + product_cnt).html('')
-            }
-
-            if (val == 'Option to manual type the Product') {
-
-                // $('#div_add_more_product').append('<div class="row" style="font-size: 16px;font-weight: bold;"><div class="col-md-3"><input type="text" name="manual_products[]" class="form-control" step="height:40px;"></div></div>')
-            }
-
-
         }
+        // Initialize product counter
+        var product_cnt = 1;
 
+        // Function to add a new product row
         function add_more_product() {
             product_cnt++;
-
-            $('#div_add_more_product').append($('#div_product').html())
-            //$('#div_add_more_product').append('<div id="div_product_spec_" '+product_cnt+' ></div>')
-            ///alert(product_cnt)
-            var div_id = "<br><div style='margin-top:10px;' id='div_product_spec_" + product_cnt + "'></div><br>";
-            $('#div_add_more_product').append(div_id)
-
+            create_product_row(product_cnt);
         }
 
+        // Function to create a product row (used for both initial and additional rows)
+        function create_product_row(rowId) {
+            // Create a new row container
+            var newRow = $('<div class="row product-row" style="font-size: 16px;font-weight: bold; margin-bottom: 15px;" id="row_' + rowId + '"></div>');
 
+            // Create product dropdown
+            var productSelect = $('<select class="form-control product-select" name="products[]" onchange="get_specification(this.value, ' + rowId + ')" style="width: 100%;"><option value="">Select</option></select>');
 
+            // Add all product options
+            <?php
+            foreach ($product as $val) {
+                echo "productSelect.append('<option value=\"$val\">$val</option>');";
+            }
+            foreach ($order_product as $row) {
+                $val = $row['product_name'];
+                echo "productSelect.append('<option value=\"$val\">$val</option>');";
+            }
+            ?>
+
+            // Create quantity, price, and total inputs
+            var quantityInput = $('<input type="text" name="quantity[]" class="form-control quantity" style="width:100px;height: 40px;">');
+            var priceInput = $('<input type="text" name="price[]" class="form-control price" style="width:100px;height: 40px;">');
+            var totalInput = $('<input type="text" name="total[]" class="form-control total" style="width:150px;height: 40px;" readonly>');
+
+            // Create remove button
+            var removeBtn = $('<button type="button" class="btn btn-danger btn-sm remove-row" style="height: 40px; margin-left: 10px;"><i class="fas fa-trash"></i></button>');
+            removeBtn.click(function () {
+                remove_product_row(rowId);
+            });
+
+            // Create columns and append elements
+            var productCol = $('<div class="col-md-3"></div>').append(productSelect);
+            var quantityCol = $('<div class="col-md-2"></div>').append(quantityInput);
+            var priceCol = $('<div class="col-md-3"></div>').append(priceInput);
+            var totalCol = $('<div class="col-md-3"></div>').append(totalInput);
+            var removeCol = $('<div class="col-md-1"></div>').append(removeBtn);
+
+            // Append columns to row
+            newRow.append(productCol, quantityCol, priceCol, totalCol, removeCol);
+
+            // Add the new row to the container
+            $('#div_add_more_product').append(newRow);
+
+            // Initialize Select2 for the new product dropdown
+            productSelect.select2({
+                placeholder: "Search product...",
+                allowClear: true,
+                width: 'resolve'
+            });
+
+            // Add specification div after the new row
+            var specDiv = $('<div style="margin-top:10px;" id="div_product_spec_' + rowId + '"></div>');
+            $('#div_add_more_product').append(specDiv);
+        }
+
+        // Function to remove a product row
+        function remove_product_row(rowId) {
+            // Don't allow removing if it's the only row left
+            if ($('.product-row').length <= 1) {
+                alert("You need to keep at least one product row");
+                return;
+            }
+
+            // Remove the row and its specification div
+            $('#row_' + rowId).remove();
+            $('#div_product_spec_' + rowId).remove();
+
+            // Recalculate totals after removal
+            calculateTotal();
+        }
+
+        // Initialize the first row when page loads
+        $(document).ready(function () {
+            // Modify the initial row to include remove button
+            $('#div_product').addClass('product-row').attr('id', 'row_1');
+
+            // Add remove button to first row
+            var removeBtn = $('<button type="button" class="btn btn-danger btn-sm remove-row" style="height: 40px; margin-left: 10px;"><i class="fas fa-trash"></i></button>');
+            removeBtn.click(function () {
+                remove_product_row(1);
+            });
+
+            // Add the remove button to the first row
+            $('#div_product .row > div:last-child').after('<div class="col-md-1"></div>').next().append(removeBtn);
+
+            // Initialize Select2 for the first product dropdown
+            $('#productCombo').select2({
+                placeholder: "Search product...",
+                allowClear: true,
+                width: 'resolve'
+            });
+        });
 
     </script>
 </body>

@@ -25,6 +25,13 @@
           <span style="color: white; font-size: 15px; font-weight: 500;">Logout</span>
         </a>
       </li>
+     
+      <li class="menu-item">
+        <a class="nav-link" href="https://infiveprint.com/job/" style="padding: 12px 20px; margin: 5px 10px; border-radius: 5px; transition: all 0.3s;">
+        <i class="fas fa-tasks" style="width: 24px; text-align: center; margin-right: 10px; color: white;"></i>
+          <span style="color: white; font-size: 15px; font-weight: 500;">Job Status</span>
+        </a>
+      </li>
     </ul>
 
     <div class="sidebar-footer" style="position: absolute; bottom: 20px; width: 100%; text-align: center; color: rgba(255,255,255,0.7); font-size: 12px;">

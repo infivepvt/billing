@@ -294,7 +294,7 @@ function formatNumber($number)
                             </div>
 
                             <div class="row">
-                            <div class="col-md-6">
+                                <div class="col-md-6">
                                     <div class="payment-box">
                                         <div class="row">
                                             <div class="col-md-6">
@@ -449,7 +449,8 @@ function formatNumber($number)
                                     <div class="heading-16">Due</div>
                                 </div>
                                 <div class="col-md-2 text-right">
-                                    <div class="heading-16">Rs. <?php echo formatNumber(abs($order_total_amount)); ?></div>
+                                    <div class="heading-16">Rs. <?php echo formatNumber(abs($order_total_amount)); ?>
+                                    </div>
                                     <div class="heading-16">Rs. <?php echo formatNumber($discount_amount); ?></div>
                                     <div class="heading-16">Rs. <?php echo formatNumber(abs($advance_paid)); ?></div>
                                     <div class="heading-16">Rs. <?php echo formatNumber($due); ?></div>
@@ -1126,23 +1127,25 @@ function formatNumber($number)
                     </form>
                 </div>
                 <div class="modal-footer">
-    <div class="col-md-6 text-left">
-        <div class="alert alert-info" style="margin-bottom: 0;">
-            <strong>Order Summary:</strong>
-            <div>Subtotal: <span id="modalSubtotal">Rs. <?php echo $order['order_total_amount']; ?></span></div>           
-            <div>Advance: Rs. <?php echo $advance_paid; ?></div>
-            <div>Due: <span id="dueAmount">Rs. <?php echo $due; ?></span></div> <!-- Added abs() here -->
-        </div>
-    </div>
-    <div class="col-md-6 text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">
-            <i class="fas fa-times"></i> Cancel
-        </button>
-        <button type="button" class="btn btn-primary" id="btnSaveProducts">
-            <i class="fas fa-save"></i> Save Changes
-        </button>
-    </div>
-</div>
+                    <div class="col-md-6 text-left">
+                        <div class="alert alert-info" style="margin-bottom: 0;">
+                            <strong>Order Summary:</strong>
+                            <div>Subtotal: <span id="modalSubtotal">Rs.
+                                    <?php echo $order['order_total_amount']; ?></span></div>
+                            <div>Advance: Rs. <?php echo $advance_paid; ?></div>
+                            <div>Due: <span id="dueAmount">Rs. <?php echo $due; ?></span></div>
+                            <!-- Added abs() here -->
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-right">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="button" class="btn btn-primary" id="btnSaveProducts">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1350,12 +1353,28 @@ function formatNumber($number)
                 var newRow = `
     <tr>
         <td>
-            <select class="form-control product-select" name="products[${newIndex}][product_name]" required>
-                <option value="">Select Product</option>
-                <?php foreach ($product as $val): ?>
-                    <option value="<?php echo $val; ?>"><?php echo $val; ?></option>
-                <?php endforeach; ?>
-            </select>
+            <select class="form-control product-select"
+                                                    name="products[<?php echo $index; ?>][product_name]" required>
+                                                    <option value="">Select Product</option>
+                                                    <?php
+                                                    // System products
+                                                    foreach ($product as $val) {
+                                                        $selected = ($item['product_name'] == $val) ? 'selected' : '';
+                                                        echo "<option value='$val' $selected>$val</option>";
+                                                    }
+
+                                                    // Custom products from database
+                                                    $statement = $pdo->prepare("SELECT * FROM pixel_media_product");
+                                                    $statement->execute();
+                                                    $order_product = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+                                                    foreach ($order_product as $row) {
+                                                        $val = $row['product_name'];
+                                                        $selected = ($item['product_name'] == $val) ? 'selected' : '';
+                                                        echo "<option value='$val' $selected>$val</option>";
+                                                    }
+                                                    ?>
+                                                </select>
         </td>
         <td class="specification-column">
             <!-- Business card Print full color -->
