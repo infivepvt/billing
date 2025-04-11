@@ -49,6 +49,12 @@ $formActionUrl = BASE_URL . "/dashboard";
       border-color: #1BA664;
       color: #fff;
     }
+    .search-results-header {
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
@@ -110,63 +116,130 @@ $formActionUrl = BASE_URL . "/dashboard";
           if (!empty($search_order)) {
             $statement = $pdo->prepare("SELECT * FROM pixel_media_order WHERE order_id = ?");
             $statement->execute([$search_order]);
+            $order = $statement->fetch(PDO::FETCH_ASSOC);
+            
+            if ($order) {
+              // Display search results header
+              echo '<div class="search-results-header">';
+              echo "<h4>Order ID: <strong>{$order['order_id']}</strong></h4>";
+              echo "<h5>Status: <span class='badge badge-primary'>{$order['current_status']}</span></h5>";
+              
+              // Get order details
+              $statement_details = $pdo->prepare("SELECT * FROM pixel_media_order_details WHERE order_id = ?");
+              $statement_details->execute([$order['order_id']]);
+              $order_details = $statement_details->fetchAll(PDO::FETCH_ASSOC);
+              
+              if (count($order_details) > 0) {
+                echo "<h5>Products:</h5>";
+                echo "<ul class='list-group mb-3'>";
+                foreach ($order_details as $product) {
+                  echo "<li class='list-group-item d-flex justify-content-between align-items-center'>";
+                  echo "{$product['product_name']}";
+                  echo "<span class='badge badge-primary badge-pill'>Qty: {$product['quantity']}</span>";
+                  echo "</li>";
+                }
+                echo "</ul>";
+              }
+              echo '</div>';
+              ?>
+              <div class="row">
+                <div class="col-md-12 d-none d-md-block" style="border: 1px solid #bcbcbc;border-radius:5px;background-color: #FFF;">
+                  <div class="row" style="line-height: 20px;padding: 20px;display: flex; align-items: center;">
+                    <div class="col-md-3">ORDER: <?php echo $order['order_id']; ?><br><span class='product'><?php echo $order['company_name']; ?></span><br><?php echo date('d-F-Y', strtotime($order['order_date'])); ?></div>
+                    <div class="col-md-3">PRODUCT<br>
+                      <?php foreach ($order_details as $row) { echo "<div class='product'>{$row['product_name']}</div>"; } ?>
+                    </div>
+                    <div class="col-md-1">QTY<br>
+                      <?php foreach ($order_details as $row) { echo "<div class='product'>{$row['quantity']}</div>"; } ?>
+                    </div>
+                    <div class="col-md-2">TOTAL<br>
+                      <?php foreach ($order_details as $row) { echo "<div class='product'>{$row['total']}</div>"; } ?>
+                    </div>
+                    <div class="col-md-1"><button class="btn btn-primary btn-lg" style="height: 35px;" onclick="view_order('<?php echo $order['order_id'] ?>')">View</button></div>
+                    <div class="col-md-2"><button class="btn btn-success btn-lg" style="height: 35px;" onclick="download_invoice('<?php echo $order['order_id']; ?>')"><i class="fas fa-plus rounded-circle"></i> Download<br>INVOICE</button></div>
+                  </div>
+                </div>
+
+                <!-- Mobile View -->
+                <div class="col-md-12 d-block d-md-none" style="border: 1px solid #bcbcbc;border-radius:5px;background-color: #FFF;">
+                  <div class="row" style="padding: 20px;">
+                    <div class="col-sm-4 col-4">ORDER: <?php echo $order['order_id']; ?><br><span class='product'><?php echo $order['company_name']; ?></span><br><?php echo date('d-F-Y', strtotime($order['order_date'])); ?></div>
+                    <div class="col-sm-5 col-5">
+                      <?php foreach ($order_details as $row) { ?>
+                        <div class='product'><?php echo $row['product_name']; ?></div>
+                        <div class='product'>QTY <?php echo $row['quantity']; ?></div>
+                        <div class='product'>RS.<?php echo $row['total']; ?></div>
+                      <?php } ?>
+                    </div>
+                    <div class="col-sm-3 col-3">
+                      <button class="btn btn-primary btn-lg" style="height: 25px;" onclick="view_order('<?php echo $order['order_id'] ?>')">View</button>
+                      <button class="btn btn-success btn-lg" style="height:30px;margin-top: 5px;" onclick="download_invoice('<?php echo $order['order_id']; ?>')"><i class="fas fa-plus rounded-circle"></i> Download<br>INVOICE</button>
+                    </div>
+                  </div>
+                </div>
+              </div><br>
+              <?php
+            } else {
+              echo "<div class='alert alert-warning'>No order found with ID: " . htmlspecialchars($search_order) . "</div>";
+            }
           } else {
+            // Original code for displaying orders by status
             $statement = $pdo->prepare("SELECT * FROM pixel_media_order WHERE current_status = ? ORDER BY order_date");
             $statement->execute([$current_status]);
+            $orders = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+            if (count($orders) == 0) {
+              echo "<div class='alert alert-warning'>No orders found with status: {$current_status}</div>";
+            }
+
+            foreach ($orders as $item) {
+              $order_id = $item['order_id'];
+
+              $statement_details = $pdo->prepare("SELECT * FROM pixel_media_order_details WHERE order_id = ?");
+              $statement_details->execute([$order_id]);
+              $order_details = $statement_details->fetchAll(PDO::FETCH_ASSOC);
+              ?>
+
+              <div class="row">
+                <div class="col-md-12 d-none d-md-block" style="border: 1px solid #bcbcbc;border-radius:5px;background-color: #FFF;">
+                  <div class="row" style="line-height: 20px;padding: 20px;display: flex; align-items: center;">
+                    <div class="col-md-3">ORDER: <?php echo $order_id; ?><br><span class='product'><?php echo $item['company_name']; ?></span><br><?php echo date('d-F-Y', strtotime($item['order_date'])); ?></div>
+                    <div class="col-md-3">PRODUCT<br>
+                      <?php foreach ($order_details as $row) { echo "<div class='product'>{$row['product_name']}</div>"; } ?>
+                    </div>
+                    <div class="col-md-1">QTY<br>
+                      <?php foreach ($order_details as $row) { echo "<div class='product'>{$row['quantity']}</div>"; } ?>
+                    </div>
+                    <div class="col-md-2">TOTAL<br>
+                      <?php foreach ($order_details as $row) { echo "<div class='product'>{$row['total']}</div>"; } ?>
+                    </div>
+                    <div class="col-md-1"><button class="btn btn-primary btn-lg" style="height: 35px;" onclick="view_order('<?php echo $order_id ?>')">View</button></div>
+                    <div class="col-md-2"><button class="btn btn-success btn-lg" style="height: 35px;" onclick="download_invoice('<?php echo $order_id; ?>')"><i class="fas fa-plus rounded-circle"></i> Download<br>INVOICE</button></div>
+                  </div>
+                </div>
+
+                <!-- Mobile View -->
+                <div class="col-md-12 d-block d-md-none" style="border: 1px solid #bcbcbc;border-radius:5px;background-color: #FFF;">
+                  <div class="row" style="padding: 20px;">
+                    <div class="col-sm-4 col-4">ORDER: <?php echo $order_id; ?><br><span class='product'><?php echo $item['company_name']; ?></span><br><?php echo date('d-F-Y', strtotime($item['order_date'])); ?></div>
+                    <div class="col-sm-5 col-5">
+                      <?php foreach ($order_details as $row) { ?>
+                        <div class='product'><?php echo $row['product_name']; ?></div>
+                        <div class='product'>QTY <?php echo $row['quantity']; ?></div>
+                        <div class='product'>RS.<?php echo $row['total']; ?></div>
+                      <?php } ?>
+                    </div>
+                    <div class="col-sm-3 col-3">
+                      <button class="btn btn-primary btn-lg" style="height: 25px;" onclick="view_order('<?php echo $order_id ?>')">View</button>
+                      <button class="btn btn-success btn-lg" style="height:30px;margin-top: 5px;" onclick="download_invoice('<?php echo $order_id; ?>')"><i class="fas fa-plus rounded-circle"></i> Download<br>INVOICE</button>
+                    </div>
+                  </div>
+                </div>
+              </div><br>
+              <?php
+            }
           }
-
-          $order = $statement->fetchAll(PDO::FETCH_ASSOC);
-
-          if (count($order) == 0) {
-            echo "<div class='alert alert-warning'>No orders found for your search.</div>";
-          }
-
-          foreach ($order as $item) {
-            $order_id = $item['order_id'];
-
-            $statement_details = $pdo->prepare("SELECT * FROM pixel_media_order_details WHERE order_id = ?");
-            $statement_details->execute([$order_id]);
-            $order_details = $statement_details->fetchAll(PDO::FETCH_ASSOC);
           ?>
-
-          <div class="row">
-            <div class="col-md-12 d-none d-md-block" style="border: 1px solid #bcbcbc;border-radius:5px;background-color: #FFF;">
-              <div class="row" style="line-height: 20px;padding: 20px;display: flex; align-items: center;">
-                <div class="col-md-3">ORDER: <?php echo $order_id; ?><br><span class='product'><?php echo $item['company_name']; ?></span><br><?php echo date('d-F-Y', strtotime($item['order_date'])); ?></div>
-                <div class="col-md-3">PRODUCT<br>
-                  <?php foreach ($order_details as $row) { echo "<div class='product'>{$row['product_name']}</div>"; } ?>
-                </div>
-                <div class="col-md-1">QTY<br>
-                  <?php foreach ($order_details as $row) { echo "<div class='product'>{$row['quantity']}</div>"; } ?>
-                </div>
-                <div class="col-md-2">TOTAL<br>
-                  <?php foreach ($order_details as $row) { echo "<div class='product'>{$row['total']}</div>"; } ?>
-                </div>
-                <div class="col-md-1"><button class="btn btn-primary btn-lg" style="height: 35px;" onclick="view_order('<?php echo $order_id ?>')">View</button></div>
-                <div class="col-md-2"><button class="btn btn-success btn-lg" style="height: 35px;" onclick="download_invoice('<?php echo $order_id; ?>')"><i class="fas fa-plus rounded-circle"></i> Download<br>INVOICE</button></div>
-              </div>
-            </div>
-
-            <!-- Mobile View -->
-            <div class="col-md-12 d-block d-md-none" style="border: 1px solid #bcbcbc;border-radius:5px;background-color: #FFF;">
-              <div class="row" style="padding: 20px;">
-                <div class="col-sm-4 col-4">ORDER: <?php echo $order_id; ?><br><span class='product'><?php echo $item['company_name']; ?></span><br><?php echo date('d-F-Y', strtotime($item['order_date'])); ?></div>
-                <div class="col-sm-5 col-5">
-                  <?php foreach ($order_details as $row) { ?>
-                    <div class='product'><?php echo $row['product_name']; ?></div>
-                    <div class='product'>QTY <?php echo $row['quantity']; ?></div>
-                    <div class='product'>RS.<?php echo $row['total']; ?></div>
-                  <?php } ?>
-                </div>
-                <div class="col-sm-3 col-3">
-                  <button class="btn btn-primary btn-lg" style="height: 25px;" onclick="view_order('<?php echo $order_id ?>')">View</button>
-                  <button class="btn btn-success btn-lg" style="height:30px;margin-top: 5px;" onclick="download_invoice('<?php echo $order_id; ?>')"><i class="fas fa-plus rounded-circle"></i> Download<br>INVOICE</button>
-                </div>
-              </div>
-            </div>
-          </div><br>
-
-          <?php } ?>
         </div>
       </section>
     </div>
