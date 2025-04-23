@@ -4,7 +4,6 @@
       <img src="<?php echo BASE_URL; ?>/assets/img/logo.png"
         style="width: 80px; height: auto; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
     </div>
-
     <ul class="sidebar-menu" style="margin-top: 30px;">
       <li class="menu-header" style="padding: 10px 25px; font-size: 12px; color: rgba(255,255,255,0.7);">MAIN NAVIGATION
       </li>
@@ -58,10 +57,10 @@
 
     </ul>
 
-    <div class="sidebar-footer"
+    <!-- <div class="sidebar-footer"
       style="position: absolute; bottom: 20px; width: 100%; text-align: center; color: rgba(255,255,255,0.7); font-size: 12px;">
       © <?php echo date('Y'); ?> Infive Print
-    </div>
+    </div> -->
   </aside>
 </div>
 
