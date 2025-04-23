@@ -98,10 +98,10 @@ if(isset($_POST['email']) && isset($_POST['password']))
 
   <!-- General JS Scripts -->
   <script src="<?php echo BASE_URL; ?>/assets/modules/jquery.min.js"></script>
+  <script src="<?php echo BASE_URL; ?>/assets/modules/nicescroll/jquery.nicescroll.min.js"></script>
   <script src="<?php echo BASE_URL; ?>/assets/modules/popper.js"></script>
   <script src="<?php echo BASE_URL; ?>/assets/modules/tooltip.js"></script>
   <script src="<?php echo BASE_URL; ?>/assets/modules/bootstrap/js/bootstrap.min.js"></script>
-  <script src="<?php echo BASE_URL; ?>/assets/modules/nicescroll/jquery.nicescroll.min.js"></script>
   <script src="<?php echo BASE_URL; ?>/assets/modules/moment.min.js"></script>
   <script src="<?php echo BASE_URL; ?>/assets/js/stisla.js"></script>
   

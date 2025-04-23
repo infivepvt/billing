@@ -30,7 +30,41 @@ if ($order_id > 0) {
 } else {
     echo "Invalid Order ID.";
 }
+
+function saveQuotation($pdo, $order_id, $customerDetails, $items, $subtotal, $discount, $total)
+{
+    // Generate a unique quotation number
+    $quotation_number = 'QTN-' . date('Ymd') . '-' . strtoupper(uniqid());
+
+    // Prepare the data
+    $valid_until = date('Y-m-d', strtotime('+14 days'));
+    $quotation_items = json_encode($items);
+
+    // Insert into database
+    $stmt = $pdo->prepare("INSERT INTO pixel_media_quotations 
+        (quotation_number, order_id, company_name, contact_person, phone, email, 
+         delivery_address, subtotal, discount, total_amount, valid_until, quotation_items)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+    $stmt->execute([
+        $quotation_number,
+        $order_id,
+        $customerDetails['company_name'],
+        $customerDetails['contact_person'],
+        $customerDetails['phone'],
+        $customerDetails['email'],
+        $customerDetails['delivery_address'],
+        $subtotal,
+        $discount,
+        $total,
+        $valid_until,
+        $quotation_items
+    ]);
+
+    return $quotation_number;
+}
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -159,14 +193,111 @@ if ($order_id > 0) {
         .product-row:last-child {
             border-bottom: none;
         }
+
+        /* New styles for quotation */
+        .quotation-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .quotation-header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #1BA664;
+            padding-bottom: 10px;
+        }
+
+        .quotation-title {
+            color: #1BA664;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .quotation-details {
+            margin-bottom: 20px;
+        }
+
+        .quotation-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .quotation-table th {
+            background-color: #1BA664;
+            color: white;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .quotation-table td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .quotation-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .quotation-totals {
+            text-align: right;
+            margin-top: 20px;
+        }
+
+        .quotation-totals table {
+            margin-left: auto;
+            border-collapse: collapse;
+        }
+
+        .quotation-totals td {
+            padding: 8px 15px;
+            text-align: right;
+        }
+
+        .quotation-totals .total-row {
+            font-weight: bold;
+            border-top: 2px solid #1BA664;
+        }
+
+        .print-button {
+            background-color: #1BA664;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+
+        .print-button:hover {
+            background-color: #168955;
+        }
+
+        @media print {
+            .no-print {
+                display: none;
+            }
+
+            body {
+                background-color: white;
+                font-size: 12pt;
+            }
+
+            .quotation-container {
+                box-shadow: none;
+                padding: 0;
+            }
+        }
     </style>
 
 
 </head>
 
 <body>
-
-
     <div class="col-md-12 offset-md-0">
         <div class="main-wrapper main-wrapper-1">
             <div class="navbar-bg" style="background-color: #1BA664;color: white;"></div>
@@ -472,9 +603,9 @@ if ($order_id > 0) {
 
                 }
                 ?>
+
                 <section class="section">
                     <form method="post" accept="./addOrder">
-
                         <div class="section-body">
 
                             <div id="alertMessage"></div>
@@ -518,9 +649,11 @@ if ($order_id > 0) {
                                                 </div>
                                                 <div class="col-md-7">
                                                     <input type="text" name="phone" class="form-control"
-                                                        style="height:30px;" required>
+                                                        style="height:30px;" required pattern="\d{10}"
+                                                        title="Please enter exactly 10 digits" maxlength="10">
                                                 </div>
                                             </div>
+
 
                                             <div class="row">
                                                 <div class="col-md-5">
@@ -574,7 +707,7 @@ if ($order_id > 0) {
                                                         }
                                                         ?>
                                                     </select>
-                                                    
+
                                                 </div>
                                                 <div class="col-md-2"><input type="text" name="quantity[]"
                                                         class="form-control quantity" style="width:100px;height: 40px;">
@@ -1313,39 +1446,475 @@ the process here: [Insert Link]. - Infive Print
 
                                     </div><br>
 
+
                                     <div class="row">
-                                        <div class="row">
-                                            <div class="col-md-3">
-                                                <input type="submit" name="btnCreateOrder" value="Save"
-                                                    class="btn btn-success btn-lg">
-                                            </div>
-                                        </div><br>
+                                        <div class="col-md-3 me-2">
+                                            <input type="submit" name="btnCreateOrder" value="Save"
+                                                class="btn btn-success btn-lg">
+                                        </div>
+                                        <div class="col-md-3 me-2">
+                                            <button type="button" class="btn btn-success btn-lg"
+                                                onclick="generateQuotation()">
+                                                Generate Quotation
+                                            </button>
+                                            <button type="button" class="btn btn-danger btn-lg"
+                                                onclick="saveQuotation()" id="saveBtn" disabled>
+                                                Save Quotation
+                                            </button>
+                                        </div>
+                                        <div class="col-md-3 me-2">
+                                            <button type="button" class="btn btn-info btn-lg "
+                                                onclick="downloadQuotationPDF()" id="downloadBtn">
+                                                Download PDF
+                                            </button>
+                                            <button type="button" class="btn btn-primary btn-lg"
+                                                onclick="printQuotationOnly()" id="printBtn">
+                                                Print Quotation
+                                            </button>
+                                        </div>
+
+                                    </div><br>
 
 
+
+
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </form>
+                    <div class="main-content" style="background-color:#F7F9F9; padding: 20px;">
+
+                        <div class="quotation-container no-print"
+                            style="background-color:#fff; padding: 30px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+
+
+
+                            <div id="quotation-preview" style="margin-top: 30px;display: none;">
+
+
+                                <!-- HEADER START -->
+                                <div class="quotation-header"
+                                    style="border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-bottom: 30px;">
+                                    <div
+                                        style="display: flex; justify-content: space-between; align-items: flex-start;">
+
+                                        <!-- Left side: Logo + Company Info -->
+                                        <div style="max-width: 60%;">
+                                            <img src="assets/img/infive_logo.png" alt="logo" width="200">
+
+                                        </div>
+
+                                        <!-- Right side: Quotation title + number -->
+                                        <div style="text-align: right; max-width: 40%;">
+                                            <div class="quotation-title" style="font-size: 40px; font-weight: bold;">
+                                                QUOTATION</div>
+                                            <h5 style="margin: 0;">Infive (Pvt) Ltd</h5>
+                                            <p style="margin: 5px 0;">infivellc@gmail.com | InfivePrint.com |
+                                                Info@infive.lk</p>
+                                            <p style="margin: 5px 0;"> +94 71 4994579 | +937 4 300 250</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- HEADER END -->
+
+
+                                <div class="quotation-details">
+                                    <div class="row" style="display: flex; justify-content: space-between;">
+                                        <div style="width: 48%;">
+                                            <strong>To:</strong><br>
+                                            <div id="preview-customer-details"></div>
+                                        </div>
+                                        <div style="width: 48%; text-align: right;">
+                                            <strong>Date:</strong> <?php echo date('Y-m-d'); ?><br>
+                                            <strong>Valid Until:</strong>
+                                            <?php echo date('Y-m-d', strtotime('+14 days')); ?>
+                                        </div>
                                     </div>
                                 </div>
 
+                                <table class="quotation-table" style="width:100%; border-collapse: collapse; ">
+                                    <thead>
+                                        <tr style="background-color: #eee;">
+                                            <th style="border:1px solid #ccc; padding:10px;">No</th>
+                                            <th style="border:1px solid #ccc; padding:10px;">Description</th>
+                                            <th style="border:1px solid #ccc; padding:10px;">Qty</th>
+                                            <th style="border:1px solid #ccc; padding:10px;">Unit Price</th>
+                                            <th style="border:1px solid #ccc; padding:10px;">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="quotation-items">
+                                        <!-- Quotation items will be populated here -->
+                                    </tbody>
+                                </table>
+
+                                <div class="quotation-totals" style=" text-align: right;">
+                                    <table style="width: 300px; float: right;">
+                                        <tr>
+                                            <td>Subtotal:</td>
+                                            <td id="quotation-subtotal">Rs. 0.00</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Discount:</td>
+                                            <td id="quotation-discount">Rs. 0.00</td>
+                                        </tr>
+                                        <tr style="font-weight: bold;">
+                                            <td>Total:</td>
+                                            <td id="quotation-total">Rs. 0.00</td>
+                                        </tr>
+                                    </table>
+                                    <div style="clear: both;"></div>
+                                </div>
+
+                                <div>
+
+                                    <p style="font-size: 20px;"><strong>Terms & Conditions:</strong></p>
+                                    <ol>
+                                        <li>This quotation is valid for 14 days from the date of issue.</li>
+                                        <li>60% advance payment required to confirm the order.</li>
+                                        <li>Delivery time starts after the approval of final artwork.</li>
+                                        <li>Prices are subject to change without prior notice.</li>
+
+
+                                    </ol>
+                                </div>
+
+                                <div style="text-align: right;">
+
+                                    <p><strong>This is an electronic invoice, no signature required</strong></p>
+                                </div>
+                                <!-- FOOTER START -->
+                                <div class="quotation-footer"
+                                    style="border-top: 1px solid #ccc; padding-top: 15px;  font-size: 13px; text-align: center; color: #555;">
+                                    <p style="font-size: 15px;"><Strong>Payment Details :-
+                                            Infive (Private) Limited |
+                                            000610017878 |
+                                            Sampath Bank -
+                                            Kurunegala</Strong></> <br>
+                                        Thank you for your business! | Infive (Private) Limited
+
+                                </div>
+                                <!-- FOOTER END -->
                             </div>
+                        </div>
+                    </div>
 
-                    </form>
-
-                </section>
             </div>
-            <?php //include('footer.php'); ?>
+            </section>
         </div>
+        <?php //include('footer.php'); ?>
     </div>
-
+    </div>
 
     <!-- General JS Scripts -->
     <script src="<?php echo BASE_URL; ?>/assets/modules/jquery.min.js"></script>
+    <script src="<?php echo BASE_URL; ?>/assets/modules/nicescroll/jquery.nicescroll.min.js"></script>
     <script src="<?php echo BASE_URL; ?>/assets/modules/popper.js"></script>
     <script src="<?php echo BASE_URL; ?>/assets/modules/tooltip.js"></script>
     <script src="<?php echo BASE_URL; ?>/assets/modules/bootstrap/js/bootstrap.min.js"></script>
-    <script src="<?php echo BASE_URL; ?>/assets/modules/nicescroll/jquery.nicescroll.min.js"></script>
     <script src="<?php echo BASE_URL; ?>/assets/modules/moment.min.js"></script>
     <script src="<?php echo BASE_URL; ?>/assets/js/stisla.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+        // Function to generate quotation preview
+
+        let quotationGenerated = false;
+        let quotationSaved = false;
+
+        function generateQuotation() {
+
+            quotationGenerated = true;
+            quotationSaved = false;
+            document.getElementById("saveBtn").disabled = false;
+
+            // Get customer details
+            const companyName = $('input[name="company_name"]').val();
+            const contactPerson = $('input[name="contact_person"]').val();
+            const phone = $('input[name="phone"]').val();
+            const email = $('input[name="email"]').val();
+            const deliveryAddress = $('textarea[name="delivery_address"]').val();
+
+            if (!companyName || !phone || !deliveryAddress) {
+                alert("Please fill in all required customer details (Company Name, Phone, and Delivery Address)");
+                return;
+            }
+
+            // Display customer details in preview
+            let customerDetails = '';
+            if (companyName) customerDetails += companyName + '<br>';
+            if (contactPerson) customerDetails += 'Attn: ' + contactPerson + '<br>';
+            if (phone) customerDetails += 'Phone: ' + phone + '<br>';
+            if (email) customerDetails += 'Email: ' + email + '<br>';
+            if (deliveryAddress) customerDetails += 'Address: ' + deliveryAddress;
+
+            $('#preview-customer-details').html(customerDetails);
+
+            // Get all product items
+            let itemsHtml = '';
+            let subtotal = 0;
+            let itemCount = 1;
+
+            $('.product-row').each(function () {
+                const product = $(this).find('select').val();
+                const quantity = $(this).find('.quantity').val();
+                const price = $(this).find('.price').val();
+                const total = $(this).find('.total').val();
+
+                if (product && quantity && price) {
+                    itemsHtml += `
+                        <tr>
+                            <td>${itemCount++}</td>
+                            <td>${product}</td>
+                            <td>${quantity}</td>
+                            <td>Rs. ${parseFloat(price).toFixed(2)}</td>
+                            <td>Rs. ${parseFloat(total).toFixed(2)}</td>
+                        </tr>
+                    `;
+                    subtotal += parseFloat(total);
+                }
+            });
+
+            if (itemCount === 1) {
+                alert("Please add at least one product to generate a quotation");
+                return;
+            }
+
+            $('#quotation-items').html(itemsHtml);
+
+            // Calculate and display totals
+            const discount = parseFloat($('#discount_amount').val()) || 0;
+            const finalTotal = subtotal - discount;
+
+            $('#quotation-subtotal').text('Rs. ' + subtotal.toFixed(2));
+            $('#quotation-discount').text('Rs. ' + discount.toFixed(2));
+            $('#quotation-total').text('Rs. ' + finalTotal.toFixed(2));
+
+            // Show the quotation preview
+            $('#quotation-preview').show();
+
+            // Scroll to the quotation preview
+            $('html, body').animate({
+                scrollTop: $('#quotation-preview').offset().top
+            }, 500);
+            alert("Quotation Generated!");
+        }
+
+        // Previous JavaScript functions remain the same
+
+        $(document).ready(function () {
+            // Previous document ready code remains the same
+
+            // Update customer details in real-time
+            $('input[name="company_name"], input[name="contact_person"], input[name="phone"], input[name="email"], textarea[name="delivery_address"]').on('keyup', function () {
+                const companyName = $('input[name="company_name"]').val();
+                const contactPerson = $('input[name="contact_person"]').val();
+                const phone = $('input[name="phone"]').val();
+                const email = $('input[name="email"]').val();
+                const deliveryAddress = $('textarea[name="delivery_address"]').val();
+
+                let customerDetails = '';
+                if (companyName) customerDetails += '<strong>Company:</strong> ' + companyName + '<br>';
+                if (contactPerson) customerDetails += '<strong>Contact:</strong> ' + contactPerson + '<br>';
+                if (phone) customerDetails += '<strong>Phone:</strong> ' + phone + '<br>';
+                if (email) customerDetails += '<strong>Email:</strong> ' + email + '<br>';
+                if (deliveryAddress) customerDetails += '<strong>Address:</strong> ' + deliveryAddress;
+
+                $('#customer-details').html(customerDetails);
+            });
+        });
+
+        function saveQuotation() {
+
+            if (!quotationGenerated) {
+                alert("Please generate the quotation first!");
+                return;
+            }
+
+            // Get customer details
+            const companyName = $('input[name="company_name"]').val();
+            const contactPerson = $('input[name="contact_person"]').val();
+            const phone = $('input[name="phone"]').val();
+            const email = $('input[name="email"]').val();
+            const deliveryAddress = $('textarea[name="delivery_address"]').val();
+            const order_id = <?php echo $order_id ?: 'null'; ?>;
+
+            // Get all product items
+            let items = [];
+            let subtotal = 0;
+
+            $('.product-row').each(function () {
+                const product = $(this).find('select').val();
+                const quantity = $(this).find('.quantity').val();
+                const price = $(this).find('.price').val();
+                const total = $(this).find('.total').val();
+
+                if (product && quantity && price) {
+                    items.push({
+                        product: product,
+                        quantity: quantity,
+                        price: price,
+                        total: total
+                    });
+                    subtotal += parseFloat(total);
+                }
+
+
+                quotationSaved = true;
+            });
+
+            // Calculate totals
+            const discount = parseFloat($('#discount_amount').val()) || 0;
+            const finalTotal = subtotal - discount;
+
+            // Prepare data for AJAX request
+            const quotationData = {
+                order_id: order_id,
+                customer: {
+                    company_name: companyName,
+                    contact_person: contactPerson,
+                    phone: phone,
+                    email: email,
+                    delivery_address: deliveryAddress
+                },
+                items: items,
+                subtotal: subtotal,
+                discount: discount,
+                total: finalTotal
+            };
+
+            // Send AJAX request to save quotation
+            $.ajax({
+                url: 'save_quotation.php',
+                type: 'POST',
+                data: { quotation_data: JSON.stringify(quotationData) },
+                dataType: 'json',
+                success: function (response) {
+                    if (response.success) {
+                        // Update the quotation number in the preview
+                        $('.quotation-title').after('<div>' + response.quotation_number + '</div>');
+
+                        // Show the quotation preview
+                        $('#quotation-preview').show();
+
+                        // Scroll to the quotation preview
+                        $('html, body').animate({
+                            scrollTop: $('#quotation-preview').offset().top
+                        }, 500);
+
+                        alert('Quotation saved successfully!');
+                    } else {
+                        alert('Error saving quotation: ' + response.message);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    alert('AJAX Error: ' + error);
+                }
+            });
+        }
+
+        // Previous JavaScript functions remain the same
+
+        $(document).ready(function () {
+            // Previous document ready code remains the same
+
+            // Update customer details in real-time
+            $('input[name="company_name"], input[name="contact_person"], input[name="phone"], input[name="email"], textarea[name="delivery_address"]').on('keyup', function () {
+                const companyName = $('input[name="company_name"]').val();
+                const contactPerson = $('input[name="contact_person"]').val();
+                const phone = $('input[name="phone"]').val();
+                const email = $('input[name="email"]').val();
+                const deliveryAddress = $('textarea[name="delivery_address"]').val();
+
+                let customerDetails = '';
+                if (companyName) customerDetails += '<strong>Company:</strong> ' + companyName + '<br>';
+                if (contactPerson) customerDetails += '<strong>Contact:</strong> ' + contactPerson + '<br>';
+                if (phone) customerDetails += '<strong>Phone:</strong> ' + phone + '<br>';
+                if (email) customerDetails += '<strong>Email:</strong> ' + email + '<br>';
+                if (deliveryAddress) customerDetails += '<strong>Address:</strong> ' + deliveryAddress;
+
+                $('#customer-details').html(customerDetails);
+            });
+        });
+        function printQuotationOnly() {
+            if (!quotationGenerated) {
+                alert("Please generate the quotation first!");
+                return;
+            }
+            if (!quotationSaved) {
+                alert("Please save the quotation before printing!");
+                return;
+            }
+            const quotation = document.getElementById("quotation-preview").innerHTML;
+            const quotationNumber = $('.quotation-title').next().text();
+
+            const printWindow = window.open('', '_blank', 'width=900,height=700');
+            printWindow.document.write(`
+        <html>
+        <head>
+            <title>Quotation ${quotationNumber}</title>
+            <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+            <style>
+                body {
+                    padding: 40px;
+                    font-family: Arial, sans-serif;
+                }
+                .quotation-header {
+                    text-align: center;
+                    margin-bottom: 30px;
+                }
+                .quotation-title {
+                    font-size: 32px;
+                    font-weight: bold;
+                    margin-bottom: 10px;
+                }
+                .quotation-details, .quotation-totals {
+                    margin-top: 20px;
+                }
+                .quotation-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 20px;
+                }
+                .quotation-table th, .quotation-table td {
+                    border: 1px solid #000;
+                    padding: 8px;
+                    text-align: center;
+                }
+                .quotation-totals table {
+                    width: 300px;
+                    float: right;
+                    margin-top: 20px;
+                    border-collapse: collapse;
+                }
+                .quotation-totals td {
+                    padding: 8px;
+                    border: 1px solid #000;
+                }
+                .total-row td {
+                    font-weight: bold;
+                }
+                ol {
+                    padding-left: 20px;
+                }
+                .signature {
+                    margin-top: 70px;
+                    text-align: right;
+                }
+            </style>
+        </head>
+        <body onload="window.print(); window.close();">
+            ${quotation}
+        </body>
+        </html>
+    `);
+            printWindow.document.close();
+        }
+
+
+    </script>
 
     <!-- JS Libraies -->
 
@@ -1363,9 +1932,9 @@ the process here: [Insert Link]. - Infive Print
         $(document).ready(function () {
             var total_order_amount = 0;
             <?php if ($recordAdded): ?>
-                setTimeout(function () {
-                    window.location.href = 'dashboard.php';
-                }, 30000); // 3 seconds delay before redirecting
+            setTimeout(function () {
+                window.location.href = 'dashboard.php';
+            }, 30000); // 3 seconds delay before redirecting
             <?php endif; ?>
 
             $('#productCombo').select2({
@@ -1608,6 +2177,150 @@ the process here: [Insert Link]. - Infive Print
                 width: 'resolve'
             });
         });
+
+        function downloadQuotationPDF() {
+            if (!quotationGenerated) {
+                alert("Please generate the quotation first!");
+                return;
+            }
+
+            if (!quotationSaved) {
+                if (confirm("Quotation hasn't been saved yet. Do you want to save it first?")) {
+                    saveQuotation();
+                    return;
+                }
+            }
+
+            // Create a clone of the quotation preview
+            const element = document.getElementById("quotation-preview").cloneNode(true);
+
+            // Add a container div with proper styling for PDF
+            const container = document.createElement('div');
+            container.style.padding = '20px';
+            container.style.fontFamily = 'Arial, sans-serif';
+            container.appendChild(element);
+
+            // Add specific styles for PDF
+            const style = document.createElement('style');
+            style.innerHTML = `
+        body { margin: 0; padding: 0; }
+        .quotation-header {  text-align: right; margin-top: 0;margin-bottom: 20px;}
+        .quotation-title { color: #1BA664; font-size: 24px; font-weight: bold; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background-color: #1BA664; color: white; padding: 10px; text-align: left; }
+        td { padding: 8px 10px; border-bottom: 1px solid #ddd; }
+        .quotation-totals table { width: 300px; margin-left: auto; }
+        .quotation-totals td { padding: 8px 15px; text-align: right; }
+        .total-row { font-weight: bold; border-top: 2px solid #1BA664; }
+    `;
+            container.appendChild(style);
+
+            // Options for PDF generation
+            const opt = {
+                margin: 10,
+                filename: 'Quotation_' + new Date().toISOString().slice(0, 10) + '.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: {
+                    scale: 2,
+                    logging: true,
+                    useCORS: true,
+                    allowTaint: true,
+                    scrollX: 0,
+                    scrollY: 0
+                },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // Generate and download PDF
+            html2pdf()
+                .set(opt)
+                .from(container)
+                .save()
+                .then(() => {
+                    // Clean up
+                    container.remove();
+                })
+                .catch(err => {
+                    console.error('PDF generation error:', err);
+                    alert('Error generating PDF: ' + err.message);
+                });
+        }
+
+        function printQuotationOnly() {
+            if (!quotationGenerated) {
+                alert("Please generate the quotation first!");
+                return;
+            }
+
+            if (!quotationSaved) {
+                if (confirm("Quotation hasn't been saved yet. Do you want to save it first?")) {
+                    saveQuotation();
+                    return;
+                }
+            }
+
+            // Get the HTML content of the quotation
+            const quotationContent = document.getElementById("quotation-preview").innerHTML;
+
+            // Create a new window with the quotation content
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+        <html>
+        <head>
+            <title>Quotation</title>
+            <style>
+                body { 
+                    font-family: Arial, sans-serif; 
+                    padding: 20px; 
+                    background-color: white;
+                }
+                .quotation-header { 
+                    text-align: center; 
+                    margin-bottom: 30px; 
+                }
+                .quotation-title { 
+                    font-size: 24px; 
+                    font-weight: bold; 
+                    color: #1BA664;
+                }
+                table { 
+                    width: 100%; 
+                    border-collapse: collapse; 
+                    margin-top: 20px; 
+                }
+                th { 
+                    background-color: #1BA664;
+                    color: white;
+                    padding: 10px;
+                    text-align: left;
+                }
+                td { 
+                    padding: 8px;
+                    border-bottom: 1px solid #ddd;
+                }
+                .total-row { 
+                    font-weight: bold; 
+                    border-top: 2px solid #1BA664;
+                }
+                @media print {
+                    body { 
+                        font-size: 12pt; 
+                        padding: 0;
+                    }
+                    .quotation-container {
+                        box-shadow: none;
+                        padding: 0;
+                    }
+                }
+            </style>
+        </head>
+        <body onload="window.print(); window.close();">
+            ${quotationContent}
+        </body>
+        </html>
+    `);
+            printWindow.document.close();
+        }
 
     </script>
 </body>
