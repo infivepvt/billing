@@ -8,7 +8,7 @@ if(isset($_POST['email']) && isset($_POST['password']))
   $email = $_POST['email'];
   $password = $_POST['password'];
 
-  if($email == 'infivellc@gmail.com'  && $password == 'InPiRiThZa#2024' )
+  if($email == 'infivellc@gmail.com'  && $password == 'bm@123' )
   {
     $_SESSION['logged_id'] = 1;
     
