@@ -90,7 +90,7 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
                             <div class="card-header"><h4>Login</h4></div>
                             <div class="card-body">
                                 <?php if (isset($error)) { ?>
-                                    <div class="alert alert-danger"><?php echo $error; ?></div>
+                                    <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
                                 <?php } ?>
                                 <form method="POST" action="" class="needs-validation" novalidate="">
                                     <div class="form-group">
@@ -108,7 +108,7 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
                                         <button type="submit" class="btn btn-primary btn-lg btn-block" tabindex="4">Login</button>
                                     </div>
                                     <div class="text-center">
-                                        Don't have an account? <a href="./signup">Sign up</a>
+                                        Don't have an account? <a href="#" onclick="promptForPassword()">Sign up</a>
                                     </div>
                                 </form>
                             </div>
@@ -133,6 +133,33 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
                 $(this).toggleClass('fa-eye fa-eye-slash');
             });
         });
+
+        function promptForPassword() {
+            let password = prompt("Please enter the signup password:");
+            if (password === null) {
+                // User canceled, do nothing
+                return;
+            }
+            // Check if password matches "Infive@2025"
+            if (password !== "Infive@6969") {
+                alert("Incorrect password. Please enter the correct password.");
+                promptForPassword(); // Retry
+                return;
+            }
+            // Store password in session via AJAX
+            $.ajax({
+                url: 'store_signup_password.php',
+                type: 'POST',
+                data: { signup_password: password },
+                success: function(response) {
+                    // Redirect to signup page
+                    window.location.href = '<?php echo BASE_URL; ?>/signup';
+                },
+                error: function() {
+                    alert("Error storing password. Please try again.");
+                }
+            });
+        }
     </script>
 </body>
 </html>
