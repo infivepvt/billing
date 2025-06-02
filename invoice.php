@@ -2,42 +2,38 @@
 session_start();
 include('db.php');
 
-// Check if user is logged in
-if (!isset($_SESSION['logged_id']) || $_SESSION['logged_id'] <= 0 || !isset($_SESSION['user'])) {
+if ($_SESSION['logged_id'] <= 0) {
     header('Location: ./');
-    exit;
 }
-
-// Get username safely
-$username = isset($_SESSION['user']['username']) ? htmlspecialchars($_SESSION['user']['username']) : 'Unknown User';
 
 $order_id = $_GET['id'] ?? 0;
 
 // Get order details
-$statement = $pdo->prepare("SELECT * FROM pixel_media_order WHERE order_id = ?");
-$statement->execute([$order_id]);
+$statement = $pdo->prepare("SELECT o.* FROM pixel_media_order o WHERE o.order_id = ?");
+$statement->execute(array($order_id));
 $order = $statement->fetch(PDO::FETCH_ASSOC);
 
 // Get order items
-$statement = $pdo->prepare("SELECT * FROM pixel_media_order_details WHERE order_id = ?");
-$statement->execute([$order_id]);
+$statement = $pdo->prepare("SELECT * FROM pixel_media_order_details d WHERE order_id = ?");
+$statement->execute(array($order_id));
 $order_details = $statement->fetchAll(PDO::FETCH_ASSOC);
 
 // Calculate totals
-$order_total_amount = $order['order_total_amount'] ?? 0;
+$order_total_amount = $order['order_total_amount'];
 $discount_amount = $order['discount_amount'] ?? 0;
 $final_amount = $order_total_amount - $discount_amount;
-$advance_paid = $order['payment_amount'] ?? 0;
+$advance_paid = $order['payment_amount'];
 $due = $final_amount - $advance_paid;
 
 function formatNumber($number)
 {
-    return number_format($number, 2, '.', ' ');
+    return number_format($number, 2, '.', '&nbsp;');
 }
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -206,7 +202,7 @@ function formatNumber($number)
         .final-amount-row {
             font-weight: bold;
             font-size: 12px;
-            color: black;
+            color:black;
         }
 
         .footer {
@@ -242,30 +238,36 @@ function formatNumber($number)
         }
     </style>
 </head>
+
 <body>
     <div class="invoice-container">
+        
         <div class="client-info" style="padding: 1px;">
             <div class="client-box">
                 <h3>BILL TO</h3>
-                <p><strong><?php echo htmlspecialchars($order['company_name'] ?? 'N/A'); ?></strong></p>
-                <p>Phone: <?php echo htmlspecialchars($order['phone'] ?? 'N/A'); ?></p>
-                <p>Delivery Address: <?php echo htmlspecialchars($order['delivery_address'] ?? 'N/A'); ?></p>
-                <p>Date: <?php echo isset($order['order_date']) ? date('d M Y', strtotime($order['order_date'])) : 'N/A'; ?></p>
+                <p><strong><?php echo $order['company_name']; ?></strong></p>
+                <p>Phone: <?php echo $order['phone']; ?></p>
+                <p>Delivery Address: <?php echo $order['delivery_address']; ?></p>
+                <p>Date: <?php echo date('d M Y', strtotime($order['order_date'])); ?></p>
                 <p>Invoice #: <?php echo $order_id; ?></p>
             </div>
+            
             <div class="payment-box">
                 <h3>PAYMENT SUMMARY</h3>
-                <p>Order Total: Rs. <?php echo htmlspecialchars(formatNumber(abs($order_total_amount))); ?></p>
-                <p>Discount: - Rs. <?php echo htmlspecialchars(formatNumber(abs($discount_amount))); ?></p>
-                <p>Final Amount: Rs. <?php echo htmlspecialchars(formatNumber(abs($final_amount))); ?></p>
-                <p>Advance: Rs. <?php echo htmlspecialchars(formatNumber(abs($advance_paid))); ?></p>
-                <p>Due: Rs. <?php echo htmlspecialchars(formatNumber($due)); ?></p>
+                <p>Order Total: Rs. <?php echo htmlspecialchars_decode(formatNumber(abs($order_total_amount))); ?></p>
+                <p>Discount: - Rs. <?php echo htmlspecialchars_decode(formatNumber(abs($discount_amount))); ?></p>
+                <p>Final Amount: Rs. <?php echo htmlspecialchars_decode(formatNumber(abs($final_amount))); ?></p>
+                <p>Advance: Rs. <?php echo htmlspecialchars_decode(formatNumber(abs($advance_paid))); ?></p>
+                <p>Due: Rs. <?php echo htmlspecialchars_decode(formatNumber($due)); ?></p>
                 <br>
                 <div style="border: 3px solid black;">
-                    <p style="font-size: 15px; text-align: center; font-weight: bold;">Total: Rs. <?php echo htmlspecialchars(formatNumber(abs($final_amount))); ?></p>
+                <p style="font-size: 15px; text-align: center; font-weight: bold;">Total : Rs.
+                    <?php echo htmlspecialchars_decode(formatNumber(abs($final_amount))); ?>
+                </p>
                 </div>
             </div>
         </div>
+
         <table>
             <thead>
                 <tr>
@@ -279,20 +281,34 @@ function formatNumber($number)
             <tbody>
                 <?php foreach ($order_details as $item) { ?>
                     <tr>
-                        <td><?php echo htmlspecialchars($item['product_name']); ?></td>
+                        <td><?php echo $item['product_name']; ?></td>
                         <td class="spec-details">
                             <?php
                             if (!empty($item['product_specification'])) {
                                 $spec = json_decode($item['product_specification'], true);
                                 if ($spec) {
+                                    // Display print type first if it exists
+                                    if (isset($spec['print_type'])) {
+                                        $printTypes = is_array($spec['print_type']) ? $spec['print_type'] : [$spec['print_type']];
+                                    }
+
                                     foreach ($spec as $key => $val) {
                                         $key = str_replace('_', ' ', $key);
-                                        if ($key === 'print_type' || strpos($key, 'spec') === 0) continue;
-                                        if ($key === 'type' && $val === 'Other' && isset($spec['custom_type'])) {
+
+                                        // Skip already displayed fields and internal fields
+                                        if ($key == 'print_type' || strpos($key, 'spec') === 0)
+                                            continue;
+
+                                        // Handle custom type
+                                        if ($key == 'type' && $val == 'Other' && isset($spec['custom_type'])) {
                                             echo "<div><strong>Type</strong>: " . htmlspecialchars($spec['custom_type']) . "</div>";
-                                        } elseif ($key === 'thikness' && $val === 'Other' && isset($spec['custom_thikness'])) {
+                                        }
+                                        // Handle custom thickness
+                                        elseif ($key == 'thikness' && $val == 'Other' && isset($spec['custom_thikness'])) {
                                             echo "<div><strong>Thickness</strong>: " . htmlspecialchars($spec['custom_thikness']) . "</div>";
-                                        } elseif (!empty($val) && !is_array($val)) {
+                                        }
+                                        // Handle regular fields
+                                        elseif (!empty($val) && !is_array($val)) {
                                             echo "<div><strong>" . htmlspecialchars(ucfirst($key)) . "</strong>: " . htmlspecialchars($val) . "</div>";
                                         }
                                     }
@@ -311,45 +327,51 @@ function formatNumber($number)
                 <?php } ?>
             </tbody>
         </table>
+
         <div class="totals" style="margin-right: 40px;">
             <div class="totals-row">
                 <span class="totals-label">Total Order Amount:</span>
-                <span class="totals-value">Rs. <?php echo htmlspecialchars(formatNumber(abs($order_total_amount))); ?></span>
+                <span class="totals-value">Rs. <?php echo htmlspecialchars_decode(formatNumber(abs($order_total_amount))); ?></span>
             </div>
+            
             <div class="totals-row">
                 <span class="totals-label">Discount Amount:</span>
-                <span class="totals-value">- Rs. <?php echo htmlspecialchars(formatNumber(abs($discount_amount))); ?></span>
+                <span class="totals-value">- Rs. <?php echo htmlspecialchars_decode(formatNumber(abs($discount_amount))); ?></span>
             </div>
+            
             <div class="totals-row final-amount-row">
                 <span class="totals-label">Final Amount:</span>
-                <span class="totals-value">Rs. <?php echo htmlspecialchars(formatNumber(abs($final_amount))); ?></span>
+                <span class="totals-value">Rs. <?php echo htmlspecialchars_decode(formatNumber(abs($final_amount))); ?></span>
             </div>
+            
             <div class="totals-row highlight-row">
                 <span class="totals-label">Advance Paid:</span>
-                <span class="totals-value">Rs. <?php echo htmlspecialchars(formatNumber(abs($advance_paid))); ?></span>
+                <span class="totals-value">Rs. <?php echo htmlspecialchars_decode(formatNumber(abs($advance_paid))); ?></span>
             </div>
+            
             <div class="totals-row highlight-row">
                 <span class="totals-label">Balance Due:</span>
-                <span class="totals-value">Rs. <?php echo htmlspecialchars(formatNumber($due)); ?></span>
+                <span class="totals-value">Rs. <?php echo htmlspecialchars_decode(formatNumber(abs($due))); ?></span>
             </div>
         </div>
+        
         <div style="clear: both;"></div>
-        <div class="footer">
-            <p>Authorized By: <?php echo $username; ?></p>
-            <p>Infive Print | Contact: +94 112 345 678 | Email: info@infiveprint.com</p>
-        </div>
-        <div class="thank-you">Thank you for your business!</div>
+
         <div class="no-print" style="text-align: center; margin-top: 10px;">
-            <button onclick="window.print()" style="padding: 5px 10px; background-color: #1BA664; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px;">
+            <button onclick="window.print()"
+                style="padding: 5px 10px; background-color: #1BA664; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px;">
                 Print Invoice
             </button>
-            <button onclick="window.close()" style="padding: 5px 10px; background-color: #666; color: white; border: none; border-radius: 3px; cursor: pointer; margin-left: 5px; font-size: 10px;">
+            <button onclick="window.close()"
+                style="padding: 5px 10px; background-color: #666; color: white; border: none; border-radius: 3px; cursor: pointer; margin-left: 5px; font-size: 10px;">
                 Close Window
             </button>
         </div>
     </div>
+
     <script>
         window.onload = function () {
+            // Auto-print if requested
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('autoprint')) {
                 window.print();

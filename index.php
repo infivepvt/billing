@@ -51,10 +51,6 @@ Route::add('/logout', function() {
     require __DIR__ . '/views/logout.php';
 });
 
-Route::add('/signup', function() {
-    require __DIR__ . '/signup.php';
-});
-
 
 $uri = explode('?', $_SERVER['REQUEST_URI'])[0];
 
