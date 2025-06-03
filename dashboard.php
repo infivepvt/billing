@@ -71,12 +71,16 @@ $formActionUrl = BASE_URL . "/dashboard";
 
     <?php include('left_menu.php'); ?>
 
-    <div class="main-content" style="background-color:#F7F9F9;">
-      <section class="section">
-        <div>
-          <h1>Dashboard Work</h1>
-        </div>
-        <br><hr><br>
+   <div class="main-content" style="background-color:#F7F9F9;">
+  <section class="section">
+    <div>
+      <h1>Dashboard Work
+        <?php if (isset($_SESSION['user']) && !empty($_SESSION['user']['username'])): ?>
+          - Welcome, <?php echo htmlspecialchars($_SESSION['user']['username']); ?>
+        <?php endif; ?>
+      </h1>
+    </div>
+    <br><hr><br>
 
         <div class="section-body">
           <div class="row mb-3">

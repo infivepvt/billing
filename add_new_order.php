@@ -1,4 +1,5 @@
 <?php
+session_start();
 include('db.php');
 
 // Define your product list
@@ -31,7 +32,7 @@ if ($order_id > 0) {
     echo "Invalid Order ID.";
 }
 
-function saveQuotation($pdo, $order_id, $customerDetails, $items, $subtotal, $discount, $total)
+function saveQuotation($pdo, $order_id, $customerDetails, $items, $subtotal, $discount, $total, $design_charges)
 {
     // Generate a unique quotation number
     $quotation_number = 'QTN-' . date('Ymd') . '-' . strtoupper(uniqid());
@@ -43,8 +44,8 @@ function saveQuotation($pdo, $order_id, $customerDetails, $items, $subtotal, $di
     // Insert into database
     $stmt = $pdo->prepare("INSERT INTO pixel_media_quotations 
         (quotation_number, order_id, company_name, contact_person, phone, email, 
-         delivery_address, subtotal, discount, total_amount, valid_until, quotation_items)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+         delivery_address, subtotal, discount, total_amount, valid_until, quotation_items, design_charges)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
     $stmt->execute([
         $quotation_number,
@@ -58,7 +59,8 @@ function saveQuotation($pdo, $order_id, $customerDetails, $items, $subtotal, $di
         $discount,
         $total,
         $valid_until,
-        $quotation_items
+        $quotation_items,
+        $design_charges
     ]);
 
     return $quotation_number;
@@ -307,8 +309,8 @@ function saveQuotation($pdo, $order_id, $customerDetails, $items, $subtotal, $di
             <?php include('left_menu.php'); ?>
             <div class="main-content" style="background-color:#F7F9F9;">
                 <div>
-                    <h1>Dashboard Work</h1>
-                </div>
+                        <h1>Dashboard Work - Welcome, <?php echo htmlspecialchars($_SESSION['user']['username']); ?>!</h1>
+                    </div>
                 <br>
                 <hr><br>
                 <?php
@@ -733,7 +735,6 @@ function saveQuotation($pdo, $order_id, $customerDetails, $items, $subtotal, $di
                                                 value="Add More Product" onclick="add_more_product()"></div>
                                     </div>
 
-
                                     <div class="row">
                                         <div class="col-md-8" align="right">Total Order Amount</div>
                                         <div class="col-md-3 heading_16" id="div_total_amount"></div>
@@ -747,8 +748,18 @@ function saveQuotation($pdo, $order_id, $customerDetails, $items, $subtotal, $di
                                     </div>
                                     <div class="row">
                                         <div class="col-md-8" align="right" style="font-weight: bold; font-size: 15px;">
-                                            Final Amount After Discount</div>
+                                            Final Amount After Discount
+                                        </div>
                                         <div class="col-md-3 heading_16" id="div_final_amount"></div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-8" align="right">
+                                            If there are more additional fees, add them.
+                                        </div>
+                                        <div class="col-md-3">
+                                            <input type="text" name="design_charges" id="design_charges"
+                                                class="form-control" style="width:150px;height: 40px;" value="0">
+                                        </div>
                                     </div>
 
 
@@ -1549,7 +1560,7 @@ the process here: [Insert Link]. - Infive Print
                                     </tbody>
                                 </table>
 
-                                <div class="quotation-totals" style=" text-align: right;">
+                                <div class="quotation-totals" style="text-align: right;">
                                     <table style="width: 300px; float: right;">
                                         <tr>
                                             <td>Subtotal:</td>
@@ -1625,7 +1636,6 @@ the process here: [Insert Link]. - Infive Print
         let quotationSaved = false;
 
         function generateQuotation() {
-
             quotationGenerated = true;
             quotationSaved = false;
             document.getElementById("saveBtn").disabled = false;
@@ -1655,7 +1665,10 @@ the process here: [Insert Link]. - Infive Print
             // Get all product items
             let itemsHtml = '';
             let subtotal = 0;
+            let designCharges = 0;
+            let courierCharges = 0;
             let itemCount = 1;
+            let items = [];
 
             $('.product-row').each(function () {
                 const product = $(this).find('select').val();
@@ -1665,15 +1678,28 @@ the process here: [Insert Link]. - Infive Print
 
                 if (product && quantity && price) {
                     itemsHtml += `
-                        <tr>
-                            <td>${itemCount++}</td>
-                            <td>${product}</td>
-                            <td>${quantity}</td>
-                            <td>Rs. ${parseFloat(price).toFixed(2)}</td>
-                            <td>Rs. ${parseFloat(total).toFixed(2)}</td>
-                        </tr>
-                    `;
+                <tr>
+                    <td>${itemCount++}</td>
+                    <td>${product}</td>
+                    <td>${quantity}</td>
+                    <td>Rs. ${parseFloat(price).toFixed(2)}</td>
+                    <td>Rs. ${parseFloat(total).toFixed(2)}</td>
+                </tr>
+            `;
                     subtotal += parseFloat(total);
+                    items.push({
+                        product: product,
+                        quantity: quantity,
+                        price: price,
+                        total: total
+                    });
+
+                    // Check if product name contains "design" or is "Delivery"
+                    if (product.toLowerCase().includes('design')) {
+                        designCharges += parseFloat(total);
+                    } else if (product === 'Delivery') {
+                        courierCharges += parseFloat(total);
+                    }
                 }
             });
 
@@ -1682,15 +1708,58 @@ the process here: [Insert Link]. - Infive Print
                 return;
             }
 
+            // Get manually entered design charges
+            let manualDesignCharges = parseFloat($('#design_charges').val()) || 0;
+
+            // Calculate adjusted total for coupon eligibility
+            let adjustedTotal = subtotal - designCharges - courierCharges - manualDesignCharges;
+
+            // Get manually entered discount
+            let discount = parseFloat($('#discount_amount').val()) || 0;
+            let couponType = 'None';
+            let finalTotal = subtotal - discount;
+
+            // Determine coupon type based on adjusted total
+            if (adjustedTotal >= 3500 && adjustedTotal < 6999) {
+                couponType = 'Free Delivery';
+                // Prompt user to apply Free Delivery
+                if (courierCharges > 0 && confirm("Eligible for Free Delivery. Do you want to apply it?")) {
+                    items = items.map(item => {
+                        if (item.product === 'Delivery') {
+                            item.price = 0;
+                            item.total = 0;
+                            // Update the table row for Delivery
+                            itemsHtml = itemsHtml.replace(
+                                `<td>Rs. ${parseFloat(item.price).toFixed(2)}</td><td>Rs. ${parseFloat(item.total).toFixed(2)}</td>`,
+                                `<td>Rs. 0.00</td><td>Rs. 0.00</td>`
+                            );
+                        }
+                        return item;
+                    });
+                    finalTotal = items.reduce((sum, item) => sum + parseFloat(item.total), 0) - discount;
+                    $('#quotation-items').html(itemsHtml);
+                }
+            } else if (adjustedTotal >= 6999 && adjustedTotal < 14999) {
+                couponType = 'Rs. 500 Discount';
+            } else if (adjustedTotal >= 15000) {
+                couponType = 'Rs. 1000 Discount';
+            }
+
+            // Update quotation items
             $('#quotation-items').html(itemsHtml);
 
-            // Calculate and display totals
-            const discount = parseFloat($('#discount_amount').val()) || 0;
-            const finalTotal = subtotal - discount;
-
+            // Update totals in preview
             $('#quotation-subtotal').text('Rs. ' + subtotal.toFixed(2));
             $('#quotation-discount').text('Rs. ' + discount.toFixed(2));
             $('#quotation-total').text('Rs. ' + finalTotal.toFixed(2));
+
+            // Update total order amount
+            $('#total_order_amount').val(finalTotal.toFixed(2));
+            $('#div_total_amount').html('Rs. ' + subtotal.toFixed(2));
+            $('#div_final_amount').html('Rs. ' + finalTotal.toFixed(2));
+
+            // Store coupon type in hidden field
+            $('#coupon_type').val(couponType);
 
             // Show the quotation preview
             $('#quotation-preview').show();
@@ -1727,7 +1796,6 @@ the process here: [Insert Link]. - Infive Print
         });
 
         function saveQuotation() {
-
             if (!quotationGenerated) {
                 alert("Please generate the quotation first!");
                 return;
@@ -1744,6 +1812,8 @@ the process here: [Insert Link]. - Infive Print
             // Get all product items
             let items = [];
             let subtotal = 0;
+            let designCharges = 0;
+            let courierCharges = 0;
 
             $('.product-row').each(function () {
                 const product = $(this).find('select').val();
@@ -1759,15 +1829,41 @@ the process here: [Insert Link]. - Infive Print
                         total: total
                     });
                     subtotal += parseFloat(total);
+
+                    // Check if product name contains "design" or is "Delivery"
+                    if (product.toLowerCase().includes('design')) {
+                        designCharges += parseFloat(total);
+                    } else if (product === 'Delivery') {
+                        courierCharges += parseFloat(total);
+                    }
                 }
-
-
-                quotationSaved = true;
             });
 
-            // Calculate totals
-            const discount = parseFloat($('#discount_amount').val()) || 0;
-            const finalTotal = subtotal - discount;
+            // Get manually entered design charges
+            let manualDesignCharges = parseFloat($('#design_charges').val()) || 0;
+
+            // Calculate adjusted total for coupon eligibility
+            let adjustedTotal = subtotal - designCharges - courierCharges - manualDesignCharges;
+
+            // Get manually entered discount
+            let discount = parseFloat($('#discount_amount').val()) || 0;
+            let couponType = 'None';
+            let finalTotal = subtotal - discount;
+
+            // Determine coupon type based on adjusted total
+            if (adjustedTotal >= 3500 && adjustedTotal < 6999) {
+                couponType = 'Free Delivery';
+                // Check if Free Delivery was applied
+                items.forEach(item => {
+                    if (item.product === 'Delivery' && parseFloat(item.price) === 0) {
+                        finalTotal = items.reduce((sum, item) => sum + parseFloat(item.total), 0) - discount;
+                    }
+                });
+            } else if (adjustedTotal >= 6999 && adjustedTotal < 14999) {
+                couponType = 'Rs. 500 Discount';
+            } else if (adjustedTotal >= 15000) {
+                couponType = 'Rs. 1000 Discount';
+            }
 
             // Prepare data for AJAX request
             const quotationData = {
@@ -1782,10 +1878,12 @@ the process here: [Insert Link]. - Infive Print
                 items: items,
                 subtotal: subtotal,
                 discount: discount,
-                total: finalTotal
+                coupon_type: couponType,
+                total: finalTotal,
+                design_charges: manualDesignCharges
             };
 
-            // Send AJAX request to save quotation
+            // In your frontend JavaScript (e.g., within saveQuotation function)
             $.ajax({
                 url: 'save_quotation.php',
                 type: 'POST',
@@ -1793,13 +1891,14 @@ the process here: [Insert Link]. - Infive Print
                 dataType: 'json',
                 success: function (response) {
                     if (response.success) {
+                        quotationSaved = true;
                         // Update the quotation number in the preview
                         $('.quotation-title').after('<div>' + response.quotation_number + '</div>');
+                        // Optionally display coupon type
+                        console.log('Coupon Type:', response.coupon_type);
+                        console.log('Adjusted Total:', response.adjusted_total);
 
-                        // Show the quotation preview
                         $('#quotation-preview').show();
-
-                        // Scroll to the quotation preview
                         $('html, body').animate({
                             scrollTop: $('#quotation-preview').offset().top
                         }, 500);
@@ -1843,45 +1942,52 @@ the process here: [Insert Link]. - Infive Print
                 alert("Please generate the quotation first!");
                 return;
             }
-            if (!quotationSaved) {
-                alert("Please save the quotation before printing!");
-                return;
-            }
-            const quotation = document.getElementById("quotation-preview").innerHTML;
-            const quotationNumber = $('.quotation-title').next().text();
 
-            const printWindow = window.open('', '_blank', 'width=900,height=700');
+            if (!quotationSaved) {
+                if (confirm("Quotation hasn't been saved yet. Do you want to save it first?")) {
+                    saveQuotation();
+                    return;
+                }
+            }
+
+            // Get the HTML content of the quotation
+            const quotationContent = document.getElementById("quotation-preview").innerHTML;
+
+            // Create a new window with the quotation content
+            const printWindow = window.open('', '_blank');
             printWindow.document.write(`
         <html>
         <head>
-            <title>Quotation ${quotationNumber}</title>
-            <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+            <title>Quotation</title>
             <style>
-                body {
-                    padding: 40px;
-                    font-family: Arial, sans-serif;
+                body { 
+                    font-family: Arial, sans-serif; 
+                    padding: 20px; 
+                    background-color: white;
                 }
-                .quotation-header {
-                    text-align: center;
-                    margin-bottom: 30px;
+                .quotation-header { 
+                    text-align: center; 
+                    margin-bottom: 30px; 
                 }
-                .quotation-title {
-                    font-size: 32px;
-                    font-weight: bold;
-                    margin-bottom: 10px;
+                .quotation-title { 
+                    font-size: 24px; 
+                    font-weight: bold; 
+                    color: #1BA664;
                 }
-                .quotation-details, .quotation-totals {
-                    margin-top: 20px;
+                table { 
+                    width: 100%; 
+                    border-collapse: collapse; 
+                    margin-top: 20px; 
                 }
-                .quotation-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin-top: 20px;
+                th { 
+                    background-color: #1BA664;
+                    color: white;
+                    padding: 10px;
+                    text-align: left;
                 }
-                .quotation-table th, .quotation-table td {
-                    border: 1px solid #000;
+                td { 
                     padding: 8px;
-                    text-align: center;
+                    border-bottom: 1px solid #ddd;
                 }
                 .quotation-totals table {
                     width: 300px;
@@ -1890,29 +1996,33 @@ the process here: [Insert Link]. - Infive Print
                     border-collapse: collapse;
                 }
                 .quotation-totals td {
-                    padding: 8px;
+                    padding: 8px 15px;
+                    text-align: right;
                     border: 1px solid #000;
                 }
-                .total-row td {
-                    font-weight: bold;
+                .total-row { 
+                    font-weight: bold; 
+                    border-top: 2px solid #1BA664;
                 }
-                ol {
-                    padding-left: 20px;
-                }
-                .signature {
-                    margin-top: 70px;
-                    text-align: right;
+                @media print {
+                    body { 
+                        font-size: 12pt; 
+                        padding: 0;
+                    }
+                    .quotation-container {
+                        box-shadow: none;
+                        padding: 0;
+                    }
                 }
             </style>
         </head>
         <body onload="window.print(); window.close();">
-            ${quotation}
+            ${quotationContent}
         </body>
         </html>
     `);
             printWindow.document.close();
         }
-
 
     </script>
 
@@ -1949,40 +2059,164 @@ the process here: [Insert Link]. - Infive Print
                 get_specification(selectedVal);
             });
 
-
-
-            // Auto-call your function on select
-            $('#productCombo').on('select2:select', function (e) {
-                var selectedVal = $(this).val();
-                get_specification(selectedVal);
-            });
-
             function calculateTotal() {
-                $('#div_add_more_product .row').each(function () {
+                let total = 0;
+                let designCharges = 0;
+                let courierCharges = 0;
+
+                $('#div_add_more_product .product-row').each(function () {
                     var quantity = $(this).find('.quantity').val();
                     var price = $(this).find('.price').val();
-                    var total = $(this).find('.total');
-                    if (quantity && price) {
+                    var totalField = $(this).find('.total');
+                    var product = $(this).find('select').val();
+
+                    if (quantity && price && product) {
                         var result = parseFloat(quantity) * parseFloat(price);
-                        total.val(result.toFixed(2));
-                        var total = 0;
-                        const quantities = document.querySelectorAll('input[name="total[]"]');
-                        quantities.forEach(quantity => {
-                            if (!isNaN(quantity.value) && quantity.value.trim() !== '') {
-                                total += parseFloat(quantity.value);
-                            }
-                        });
-                        $('#total_order_amount').val(total);
-                        $('#div_total_amount').html('RS.' + total.toFixed(2));
-                        // Calculate final amount after discount
-                        var discount = parseFloat($('#discount_amount').val()) || 0;
-                        var finalAmount = total - discount;
-                        $('#div_final_amount').html('RS.' + finalAmount.toFixed(2));
+                        totalField.val(result.toFixed(2));
+                        total += result;
+
+                        // Check if product name contains "design" (case-insensitive) or is "Delivery"
+                        if (product.toLowerCase().includes('design')) {
+                            designCharges += result;
+                        } else if (product === 'Delivery') {
+                            courierCharges += result;
+                        }
                     } else {
-                        total.val('');
+                        totalField.val('');
                     }
                 });
+
+                // Update total order amount
+                $('#total_order_amount').val(total.toFixed(2));
+                $('#div_total_amount').html('Rs. ' + total.toFixed(2));
+
+                // Get manually entered discount
+                var discount = parseFloat($('#discount_amount').val()) || 0;
+                var finalAmount = total - discount;
+                $('#div_final_amount').html('Rs. ' + finalAmount.toFixed(2));
+
+                // Get manually entered design charges (if any)
+                var manualDesignCharges = parseFloat($('#design_charges').val()) || 0;
+
+                // Calculate adjusted total for coupon eligibility
+                var adjustedTotal = total - designCharges - courierCharges - manualDesignCharges;
+
+                // Determine coupon type based on adjusted total
+                // Determine coupon type based on adjusted total
+                var couponType = 'No Coupon';
+                if (adjustedTotal >= 3500 && adjustedTotal < 6999) {
+                    couponType = 'Free Delivery';
+                } else if (adjustedTotal >= 6999 && adjustedTotal < 14999) {
+                    couponType = 'Rs. 500 Discount';
+                } else if (adjustedTotal >= 15000) {
+                    couponType = 'Rs. 1000 Discount';
+                }
+
+                // Update total order amount (based on manually entered discount)
+                $('#total_order_amount').val(finalAmount.toFixed(2));
+
+                // Display coupon type below design charges field
+                var couponRowId = 'coupon-type-row';
+                var couponDisplay = $('#' + couponRowId);
+                if (couponType !== 'No Coupon') {
+                    if (couponDisplay.length === 0) {
+                        // Create the coupon row below the design charges field
+                        $('#design_charges').closest('.row').after(`
+                    <div class="magic-coupon-container" style="position: relative; max-width: 80%; margin: 30px auto; height: 160px; perspective: 1000px;">
+    <!-- Magic Flash Effect -->
+    <div class="magic-flash" style="position: absolute; width: 100%; height: 100%; background: white; opacity: 0; animation: magicFlash 1.2s ease-out;"></div>
+    
+    <!-- Coupon Card -->
+    <div class="magic-coupon" id="${couponRowId}" style="background: linear-gradient(135deg, #e3f2fd, #b3e5fc); border: 1px solid #90caf9; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); height: 150px; display: flex; align-items: center; transform-style: preserve-3d; animation: cardAppear 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.3s both; opacity: 0; padding: 0 20px;">
+        
+        <!-- Sparkle Particles -->
+        <div class="sparkle" style="position: absolute; width: 8px; height: 8px; background: white; border-radius: 50%; opacity: 0; animation: sparklePop 0.8s ease-out 0.8s forwards; top: 20%; left: 15%;"></div>
+        <div class="sparkle" style="position: absolute; width: 6px; height: 6px; background: gold; border-radius: 50%; opacity: 0; animation: sparklePop 0.8s ease-out 1s forwards; bottom: 30%; right: 10%;"></div>
+        
+        <div class="col-8 text-end" style="font-weight: 700; font-size: 28px; color: #1a237e; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            ✨ Magic Coupon
+        </div>
+        <div class="col-4" id="coupon-type" style="font-size: 24px; color: #1b5e20; font-weight: 600; text-align: left; animation: textGlow 2s ease-in-out infinite 1.5s alternate;"></div>
+    </div>
+</div>
+
+<style>
+/* Magic Flash Effect */
+@keyframes magicFlash {
+    0% { opacity: 0.9; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
+    100% { opacity: 0; transform: scale(1.5); }
+}
+
+/* Card Appearance */
+@keyframes cardAppear {
+    0% { 
+        opacity: 0;
+        transform: rotateY(90deg) scale(0.7);
+    }
+    70% {
+        transform: rotateY(-10deg) scale(1.05);
+    }
+    100% { 
+        opacity: 1;
+        transform: rotateY(0) scale(1);
+    }
+}
+
+/* Sparkle Effects */
+@keyframes sparklePop {
+    0% {
+        opacity: 0;
+        transform: scale(0);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.5);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+}
+
+/* Text Glow Effect */
+@keyframes textGlow {
+    from { text-shadow: 0 0 5px rgba(30, 180, 30, 0.3); }
+    to { text-shadow: 0 0 15px rgba(30, 220, 30, 0.7); }
+}
+
+/* Hover Effect */
+#${couponRowId}:hover {
+    animation: gentleFloat 3s ease-in-out infinite;
+    transform-origin: center;
+}
+
+@keyframes gentleFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(1deg); }
+}
+</style>
+                `);
+                    }
+                    $('#coupon-type').html(couponType);
+                } else {
+                    // Remove the coupon row if no coupon is applicable
+                    if (couponDisplay.length > 0) {
+                        couponDisplay.remove();
+                    }
+                }
+
+                // Store coupon type in hidden field for quotation preview
+                if ($('#coupon_type').length === 0) {
+                    $('form').append('<input type="hidden" id="coupon_type" name="coupon_type">');
+                }
+                $('#coupon_type').val(couponType);
             }
+
+            // Add event listener for design charges changes
+            $('#design_charges').on('keyup', function () {
+                calculateTotal();
+            });
 
             // Add event listener for discount amount changes
             $('#discount_amount').on('keyup', function () {
@@ -2009,7 +2243,7 @@ the process here: [Insert Link]. - Infive Print
                     var checkboxValue = $(this).val();
                     if (checkboxValue == 'COD') {
                         var due_amount = $('#total_order_amount').val() - $('#advance_payment_amount').val();
-                        $('#due_amount').val(due_amount)
+                        $('#due_amount').val(due_amount);
                     }
                 }
             });
@@ -2204,13 +2438,13 @@ the process here: [Insert Link]. - Infive Print
             const style = document.createElement('style');
             style.innerHTML = `
         body { margin: 0; padding: 0; }
-        .quotation-header {  text-align: right; margin-top: 0;margin-bottom: 20px;}
+        .quotation-header { text-align: right; margin-top: 0; margin-bottom: 20px; }
         .quotation-title { color: #1BA664; font-size: 24px; font-weight: bold; margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th { background-color: #1BA664; color: white; padding: 10px; text-align: left; }
         td { padding: 8px 10px; border-bottom: 1px solid #ddd; }
         .quotation-totals table { width: 300px; margin-left: auto; }
-        .quotation-totals td { padding: 8px 15px; text-align: right; }
+        .quotation-totals td { padding: 8px 15px; text-align: right; border: 1px solid #000; }
         .total-row { font-weight: bold; border-top: 2px solid #1BA664; }
     `;
             container.appendChild(style);
