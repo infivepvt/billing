@@ -337,6 +337,13 @@ function formatNumber($number)
         <div class="footer">
             <p>Authorized By: <?php echo $username; ?></p>
             <p>Infive Print | Contact: +94 112 345 678 | Email: info@infiveprint.com</p>
+            <p><Strong>Payment Details :-
+                    Infive (Private) Limited |
+                    000610017878 |
+                    Sampath Bank -
+                    Kurunegala</Strong></> <br>
+                Thank you for your business! | Infive (Private) Limited
+            </p>
         </div>
         <div class="thank-you">Thank you for your business!</div>
         <div class="no-print" style="text-align: center; margin-top: 10px;">
