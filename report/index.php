@@ -206,48 +206,55 @@ foreach ($order_details as $item) {
     $pdf->Cell(190, 3, '', 'B', 1, 'L', false);
 }
 
-// Totals Section
-$pdf->Ln(2);
+// Payment Details and Totals Section
+$pdf->Ln(10); // Space after table
+
+// Payment Details (Left Side)
+$pdf->SetFont('MontserratB', '', 8); // Smaller bold font for payment details
+$pdf->SetX(10); // Left margin
+$y_start = $pdf->GetY(); // Store Y position for alignment
+$pdf->MultiCell(50, $line_height - 1, "Payment Details:\nInfive Private Limited\n000610017878\nSampath Bank - Kurunegala", 0, 'L');
+
+// Totals Section (Right Side)
+$pdf->SetXY(140, $y_start); // Start at same Y as payment details, right side
 $pdf->SetFont('Montserrat', '', 10);
 
 // Total Order Amount
-$pdf->Cell(130, $line_height, '', 0, 0, 'R', false);
-$pdf->Cell(30, $line_height, 'TOTAL ', 0, 0, 'L', false);
+$pdf->Cell(30, $line_height, 'TOTAL', 0, 0, 'L', false);
 $pdf->SetFont('MontserratB', '', 10);
 $pdf->Cell(30, $line_height, 'RS.' . number_format($order['order_total_amount'], 2), 0, 1, 'L', false);
+$pdf->SetX(140);
 
 // Discount Amount
 $pdf->SetFont('Montserrat', '', 10);
-$pdf->Cell(130, $line_height, '', 0, 0, 'R', false);
 $pdf->Cell(30, $line_height, 'DISCOUNT', 0, 0, 'L', false);
 $pdf->SetFont('MontserratB', '', 10);
 $pdf->Cell(30, $line_height, '- RS.' . number_format($discount_amount, 2), 0, 1, 'L', false);
+$pdf->SetX(140);
 
 // Final Amount After Discount
 $pdf->SetFont('Montserrat', '', 10);
-$pdf->Cell(130, $line_height, '', 0, 0, 'R', false);
 $pdf->Cell(30, $line_height, 'FINAL AMOUNT', 0, 0, 'L', false);
 $pdf->SetFont('MontserratB', '', 10);
 $pdf->Cell(30, $line_height, 'RS.' . number_format($final_amount, 2), 0, 1, 'L', false);
+$pdf->SetX(140);
 
 // Advance Payment
 $pdf->SetFont('Montserrat', '', 10);
-$pdf->Cell(130, $line_height, '', 0, 0, 'R', false);
 $pdf->Cell(30, $line_height, 'ADVANCE', 0, 0, 'L', false);
 $pdf->SetFont('MontserratB', '', 10);
 $pdf->Cell(30, $line_height, 'RS.' . number_format($order['payment_amount'], 2), 0, 1, 'L', false);
+$pdf->SetX(140);
 
 // Total Due (with green background)
 $pdf->SetFillColor(14, 167, 85);
 $pdf->SetDrawColor(14, 167, 85);
-$pdf->RoundedRect(140, $pdf->GetY() + 7, 60, $line_height * 2, 2, 'DF');
-
-$pdf->Ln(10);
+$pdf->RoundedRect(140, $pdf->GetY(), 60, $line_height * 2, 2, 'DF');
 $pdf->SetFont('Montserrat', '', 11);
-$pdf->Cell(130, $line_height, '', 0, 0, 'R', false);
 $pdf->Cell(30, $line_height, 'TOTAL DUE', 0, 0, 'L', false);
 $pdf->SetFont('MontserratB', '', 11);
 $pdf->Cell(30, $line_height, 'RS.' . number_format($due, 2), 0, 1, 'L', false);
 
+// Output the PDF
 $pdf->Output('invoice.pdf', 'D');
 ?>
