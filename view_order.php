@@ -299,29 +299,37 @@ function formatNumber($number)
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="heading-20">Payment Summary</div>
-                                                <div class="heading-16">Total: Rs.
-                                                    <?php echo formatNumber($order_total_amount); ?>
+                                                <div class="heading-16">Total: Rs. <span
+                                                        id="totalAmountDisplay"><?php echo formatNumber($order_total_amount); ?></span>
                                                 </div>
-                                                <div class="heading-16">Discount: Rs.
-                                                    <?php echo formatNumber($discount_amount); ?>
+                                                <div class="heading-16">Discount: Rs. <span
+                                                        id="discountAmountDisplay"><?php echo formatNumber($discount_amount); ?></span>
                                                 </div>
-                                                <div class="heading-22">Final Amount: Rs.
-                                                    <?php echo formatNumber($final_amount); ?>
+                                                <div class="heading-22">Final Amount: Rs. <span
+                                                        id="finalAmountDisplay"><?php echo formatNumber($final_amount); ?></span>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="heading-16">Advance: Rs.
-                                                    <?php echo formatNumber($advance_paid); ?>
+                                                    <input type="number" step="0.01" id="advanceInput"
+                                                        value="<?php echo $advance_paid; ?>"
+                                                        style="width: 100px; display: inline-block;"
+                                                        class="form-control form-control-sm">
+                                                    <button class="btn btn-success btn-sm" id="updateAdvanceBtn">
+                                                        <i class="fas fa-save"></i> Update
+                                                    </button>
                                                 </div>
-                                                <div class="heading-16">Due: Rs. <?php echo formatNumber($due); ?></div>
+                                                <div class="heading-16">Due: Rs. <span
+                                                        id="dueAmountDisplay"><?php echo formatNumber($due); ?></span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="delivery-box">
                                         <div class="row">
                                             <div class="col-md-6 heading-16">CASH ON DELIVERY:</div>
-                                            <div class="col-md-6 heading-16">Rs. <?php echo formatNumber($due); ?>
-                                            </div>
+                                            <div class="col-md-6 heading-16">Rs. <span
+                                                    id="codAmountDisplay"><?php echo formatNumber($due); ?></span></div>
                                         </div>
                                     </div>
                                 </div>
@@ -449,11 +457,17 @@ function formatNumber($number)
                                     <div class="heading-16">Due</div>
                                 </div>
                                 <div class="col-md-2 text-right">
-                                    <div class="heading-16">Rs. <?php echo formatNumber(abs($order_total_amount)); ?>
+                                    <div class="heading-16">Rs. <span
+                                            id="summaryTotalDisplay"><?php echo formatNumber(abs($order_total_amount)); ?></span>
                                     </div>
-                                    <div class="heading-16">Rs. <?php echo formatNumber($discount_amount); ?></div>
-                                    <div class="heading-16">Rs. <?php echo formatNumber(abs($advance_paid)); ?></div>
-                                    <div class="heading-16">Rs. <?php echo formatNumber($due); ?></div>
+                                    <div class="heading-16">Rs. <span
+                                            id="summaryDiscountDisplay"><?php echo formatNumber($discount_amount); ?></span>
+                                    </div>
+                                    <div class="heading-16">Rs. <span
+                                            id="summaryAdvanceDisplay"><?php echo formatNumber(abs($advance_paid)); ?></span>
+                                    </div>
+                                    <div class="heading-16">Rs. <span
+                                            id="summaryDueDisplay"><?php echo formatNumber($due); ?></span></div>
                                 </div>
                             </div>
 
@@ -2112,6 +2126,78 @@ function formatNumber($number)
                 icon.classList.add('fa-copy');
             }, 1000);
         }
+
+        $(document).ready(function () {
+    // Update advance payment
+    $('#updateAdvanceBtn').click(function () {
+        var newAdvance = parseFloat($('#advanceInput').val());
+        var finalAmount = parseFloat(<?php echo $final_amount; ?>);
+
+        if (isNaN(newAdvance) || newAdvance < 0) {
+            alert('Please enter a valid advance amount');
+            return;
+        }
+
+        if (newAdvance > finalAmount) {
+            alert('Advance amount cannot be greater than the final amount.');
+            return;
+        }
+
+        // Show loading indicator
+        $(this).html('<i class="fas fa-spinner fa-spin"></i> Updating...').prop('disabled', true);
+
+        $.ajax({
+            url: '../update_advance.php',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                order_id: <?php echo $order_id; ?>,
+                advance_amount: newAdvance
+            },
+            success: function (response) {
+                if (response.success) {
+                    // Update displayed values
+                    var formattedDue = response.new_due.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+                    var formattedAdvance = response.new_advance.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+
+                    // Update Payment Summary section
+                    $('.payment-box .heading-md-12').html('Advance <input type="number" step="0.01" id="advanceInput" value="' + response.new_advance + '" style="width: 100px; display: inline-block;" class="form-control form-control-sm"> Rs. <button class="btn btn-success btn-sm" id="updateAdvanceBtn"><i class="fas fa-save"></i> Update</button>');
+                    $('.payment-box .heading-16:contains("Due")').text('Due: Rs. ' + formattedDue);
+
+                    // Update Cash on Delivery section
+                    $('.delivery-box .heading-16:contains("Rs.")').text('Rs. ' + formattedDue);
+
+                    // Update Order Summary in Edit Products Modal
+                    $('#dueAmount').text('Rs. ' + formattedDue);
+
+                    // Update Summary Table (Total, Discount, Advance, Due)
+                    $('#summaryAdvanceDisplay').text(formattedAdvance);
+                    $('#summaryDueDisplay').text(formattedDue);
+
+                    // Show success message
+                    $('#ajaxModal .modal-body').html(
+                        '<div class="alert alert-success">Advance payment updated successfully!<br>New Due: Rs. ' + formattedDue + '</div>'
+                    );
+                    $('#ajaxModal').modal('show');
+                } else {
+                    $('#ajaxModal .modal-body').html(
+                        '<div class="alert alert-danger">' + response.message + '</div>'
+                    );
+                    $('#ajaxModal').modal('show');
+                }
+            },
+            error: function (xhr, status, error) {
+                $('#ajaxModal .modal-body').html(
+                    '<div class="alert alert-danger">Error: ' + error + '</div>'
+                );
+                $('#ajaxModal').modal('show');
+            },
+            complete: function () {
+                $('#updateAdvanceBtn').html('<i class="fas fa-save"></i> Update').prop('disabled', false);
+            }
+        });
+    });
+});
     </script>
 </body>
 
